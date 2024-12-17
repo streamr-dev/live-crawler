@@ -40,27 +40,37 @@ export const crawlTopology = async (
     const startTime = Date.now()
     const nodeInfos: Map<DhtAddress, NormalizedNodeInfo> = new Map()
     const errorNodes: Set<DhtAddress> = new Set()
+    const visitedNodes: Set<DhtAddress> = new Set() // used to avoid duplicate entries in queue
     const queue: PeerDescriptor[] = [...entryPoints]
+    const BATCH_SIZE = 5
 
     while (queue.length > 0) {
-        const peerDescriptor = queue.shift()!
-        const nodeId = toNodeId(peerDescriptor)
-        const processed = nodeInfos.has(nodeId) || errorNodes.has(nodeId)
-        if (processed) {
-            continue
-        }
-        try {
-            logger.info(`Querying ${nodeId}`, { runId })
-            const info = await localNode.fetchNodeInfo(peerDescriptor)
-            nodeInfos.set(nodeId, info)
-            logger.info(`Queried ${nodeId}`, { info: createNodeInfoLogOutput(info), runId })
-            for (const neighbor of getNeighbors(info)) {
-                queue.push(neighbor)
+        const batch = queue.splice(0, BATCH_SIZE)
+        const promises = batch.map(async (peerDescriptor) => {
+            const nodeId = toNodeId(peerDescriptor)
+            const processed = nodeInfos.has(nodeId) || errorNodes.has(nodeId)
+            if (processed) {
+                return
             }
-        } catch (err) {
-            errorNodes.add(nodeId)
-            logger.warn(`Query failed ${nodeId}`, { peerDescriptor: createPeerDescriptorLogOutput(peerDescriptor), err, runId })
-        }
+            try {
+                logger.info(`Querying ${nodeId}`, { runId })
+                const info = await localNode.fetchNodeInfo(peerDescriptor)
+                nodeInfos.set(nodeId, info)
+                visitedNodes.add(nodeId)
+                logger.info(`Queried ${nodeId}`, { info: createNodeInfoLogOutput(info), runId })
+                for (const neighbor of getNeighbors(info)) {
+                    const neighborId = toNodeId(neighbor)
+                    if (!visitedNodes.has(neighborId)) {
+                        queue.push(neighbor)
+                        visitedNodes.add(neighborId)
+                    }
+                }
+            } catch (err) {
+                errorNodes.add(nodeId)
+                logger.warn(`Query failed ${nodeId}`, { peerDescriptor: createPeerDescriptorLogOutput(peerDescriptor), err, runId })
+            }
+        })
+        await Promise.all(promises)
     }
 
     logger.info(`Topology crawled`, { runId, timeTaken: Date.now() - startTime, nodeCount: nodeInfos.size, errorCount: errorNodes.size })
