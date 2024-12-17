@@ -1,5 +1,6 @@
 import express from 'express'
 import cors from 'cors'
+import path from 'path'
 import { NetworkNode } from "@streamr/trackerless-network"
 import { crawlTopology } from "./crawlTopology"
 import { StreamrClient } from "@streamr/sdk"
@@ -12,6 +13,10 @@ const app = express()
 const logger = new Logger(module)
 
 app.use(cors())
+
+app.get('/', (_req, res) => {
+    res.sendFile(path.join(__dirname, '../index.html'))
+})
 
 const streamrClient = new StreamrClient({
     metrics: false
