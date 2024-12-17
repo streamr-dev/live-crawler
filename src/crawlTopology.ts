@@ -37,6 +37,7 @@ export const crawlTopology = async (
     getNeighbors: (nodeInfo: NormalizedNodeInfo) => PeerDescriptor[],
     runId: string
 ): Promise<Topology> => {
+    const startTime = Date.now()
     const nodeInfos: Map<DhtAddress, NormalizedNodeInfo> = new Map()
     const errorNodes: Set<DhtAddress> = new Set()
     const queue: PeerDescriptor[] = [...entryPoints]
@@ -62,6 +63,6 @@ export const crawlTopology = async (
         }
     }
 
-    logger.info(`Topology: nodeCount=${nodeInfos.size}, errors=${errorNodes.size}`, { runId })
+    logger.info(`Topology crawled`, { runId, timeTaken: Date.now() - startTime, nodeCount: nodeInfos.size, errorCount: errorNodes.size })
     return new Topology([...nodeInfos.values()])
 }
