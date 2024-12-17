@@ -11,8 +11,10 @@ Consider this a prototype, TODO:
 - streaming results (for big streams)
 
 ## Install and run
+```shell
+npm install
+npm run build
+npm run start
+```
 
-1. Run `npm install`
-2. Run `npm run build`
-3. Run `node dist/index.js`
-4. Open index.html (in project root) with your favorite browser, pass `?streamId=<YOUR_STREAM_ID>` as a query parameter to fetch a topology for the specified streamId
+Navigate to http://localhost:3000
