@@ -39,28 +39,29 @@ export const crawlTopology = async (
 ): Promise<Topology> => {
     const nodeInfos: Map<DhtAddress, NormalizedNodeInfo> = new Map()
     const errorNodes: Set<DhtAddress> = new Set()
-    const processNode = async (peerDescriptor: PeerDescriptor): Promise<void> => {
+    const queue: PeerDescriptor[] = [...entryPoints]
+
+    while (queue.length > 0) {
+        const peerDescriptor = queue.shift()!
         const nodeId = toNodeId(peerDescriptor)
         const processed = nodeInfos.has(nodeId) || errorNodes.has(nodeId)
         if (processed) {
-            return
+            continue
         }
         try {
             logger.info(`Querying ${nodeId}`, { runId })
             const info = await localNode.fetchNodeInfo(peerDescriptor)
             nodeInfos.set(nodeId, info)
             logger.info(`Queried ${nodeId}`, { info: createNodeInfoLogOutput(info), runId })
-            for (const node of getNeighbors(info)) {
-                await processNode(node)
+            for (const neighbor of getNeighbors(info)) {
+                queue.push(neighbor)
             }
         } catch (err) {
             errorNodes.add(nodeId)
             logger.warn(`Query failed ${nodeId}`, { peerDescriptor: createPeerDescriptorLogOutput(peerDescriptor), err, runId })
         }
     }
-    for (const node of entryPoints) {
-        await processNode(node)
-    }
+
     logger.info(`Topology: nodeCount=${nodeInfos.size}, errors=${errorNodes.size}`, { runId })
     return new Topology([...nodeInfos.values()])
 }
