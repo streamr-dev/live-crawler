@@ -251,32 +251,69 @@
                 // Reset all nodes and links to default style
                 resetHighlighting();
 
-                // Highlight the clicked node
-                d3.select(this).attr("fill", "red");
-                highlightedNodes.add(d.id);
+                // Start highlighting from the clicked node
+                highlightConnections(d.id);
+            });
 
-                // Find neighbor nodes
-                const neighborNodeIds = new Set();
-                links.forEach(function(l) {
-                    if (l.source.id === d.id) {
-                        neighborNodeIds.add(l.target.id);
-                    } else if (l.target.id === d.id) {
-                        neighborNodeIds.add(l.source.id);
+// Function to highlight connections progressively
+function highlightConnections(startNodeId) {
+    const visited = new Set();
+    const queue = [startNodeId];
+    let currentLevel = 0;
+
+    function highlightNextLevel() {
+        if (queue.length === 0) return;
+
+        const nextQueue = [];
+        queue.forEach(nodeId => {
+            if (!visited.has(nodeId)) {
+                visited.add(nodeId);
+
+                // Highlight the node
+                circles.filter(n => n.id === nodeId)
+                    .attr("fill", "red")
+                    .transition()
+                    .duration(2000)
+                    .attr("fill", "blue");
+
+                // Highlight links and gather next level nodes
+                links.forEach(linkData => {
+                    if (linkData.source.id === nodeId && !visited.has(linkData.target.id)) {
+                        d3.selectAll("line")
+                            .filter(l => l.source.id === linkData.source.id && l.target.id === linkData.target.id)
+                            .attr("stroke", "red")
+                            .attr("stroke-width", 2)
+                            .transition()
+                            .duration(2000)
+                            .attr("stroke", "#999")
+                            .attr("stroke-width", 1);
+                        nextQueue.push(linkData.target.id);
+                    } else if (linkData.target.id === nodeId && !visited.has(linkData.source.id)) {
+                        d3.selectAll("line")
+                            .filter(l => l.source.id === linkData.source.id && l.target.id === linkData.target.id)
+                            .attr("stroke", "red")
+                            .attr("stroke-width", 2)
+                            .transition()
+                            .duration(2000)
+                            .attr("stroke", "#999")
+                            .attr("stroke-width", 1);
+                        nextQueue.push(linkData.source.id);
                     }
                 });
+            }
+        });
 
-                // Highlight neighbor nodes
-                circles.filter(function(n) { return neighborNodeIds.has(n.id); })
-                    .attr("fill", "orange");
+        // Move to the next level
+        queue.length = 0;
+        queue.push(...nextQueue);
 
-                neighborNodeIds.forEach(id => highlightedNodes.add(id));
+        // Schedule the next level highlighting
+        setTimeout(highlightNextLevel, 600);
+    }
 
-                // Highlight links connected to the clicked node
-                link.filter(function(l) { return l.source.id === d.id || l.target.id === d.id; })
-                    .attr("stroke", "red")
-                    .attr("stroke-width", 2)
-                    .each(function(l) { highlightedLinks.add(l); });
-            });
+    // Start the highlighting process
+    highlightNextLevel();
+}
 
             // Add click event to the SVG background to reset highlighting
             svg.on("click", function(event) {
