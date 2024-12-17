@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "@tsconfig/node20/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "noImplicitOverride": true,
+    "resolveJsonModule": true,
+    "incremental": true,
+    "stripInternal": true,
+    "strictBindCallApply": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true
+  },
+  "include": [
+    "src/**/*",
+    "bin/*.ts",
+    "test/**/*"
+  ]
+}
