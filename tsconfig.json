@@ -9,7 +9,8 @@
     "stripInternal": true,
     "strictBindCallApply": true,
     "emitDecoratorMetadata": true,
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "sourceMap": true
   },
   "include": [
     "src/**/*",
