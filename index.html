@@ -11,7 +11,7 @@
         }
 
         .nodes circle {
-            stroke: #fff;
+            stroke: #0000ff;
             stroke-width: 1.5px;
         }
 
@@ -160,6 +160,19 @@
         const content = document.getElementById('node-details-content');
         currentNodeId = node.id; // Store the current node ID
 
+        // Reset all nodes to default style
+        d3.selectAll("circle.highlight-ring").remove();
+
+        // Add highlight ring to selected node
+        d3.selectAll(".nodes g")
+            .filter(d => d.id === node.id)
+            .append("circle")
+            .attr("class", "highlight-ring")
+            .attr("r", 14)
+            .attr("fill", "none")
+            .attr("stroke", "blue")
+            .attr("stroke-width", 2);
+
         // Build details content
         let detailsHTML = `
             <p><strong>Node ID:</strong> ${node.id}</p>
@@ -179,6 +192,8 @@
 
     function closeNodeDetails() {
         document.getElementById('node-details').style.display = 'none';
+        // Remove highlight ring when closing details
+        d3.selectAll("circle.highlight-ring").remove();
     }
 
     function visualizePropagation() {
@@ -400,6 +415,9 @@
                 // Reset link styles
                 link.attr("stroke", "#999").attr("stroke-width", 1);
                 highlightedLinks.clear();
+
+                // Remove highlight rings
+                d3.selectAll("circle.highlight-ring").remove();
             }
 
             // Update positions on each tick of the simulation
