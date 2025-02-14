@@ -112,6 +112,60 @@ function visualizePropagation() {
     }
 }
 
+function computeNetworkDiameter(nodes, links) {
+    const adjacencyList = new Map();
+
+    // Build adjacency list
+    nodes.forEach(node => {
+        adjacencyList.set(node.id, []);
+    });
+
+    links.forEach(link => {
+        adjacencyList.get(link.source).push(link.target);
+        adjacencyList.get(link.target).push(link.source);
+    });
+
+    let diameter = 0;
+
+    // Function to perform BFS and find shortest paths from a source node
+    function bfs(startId) {
+        const visited = new Set();
+        const queue = [];
+        const distances = new Map();
+
+        visited.add(startId);
+        queue.push(startId);
+        distances.set(startId, 0);
+
+        while (queue.length > 0) {
+            const currentId = queue.shift();
+            const neighbors = adjacencyList.get(currentId);
+
+            neighbors.forEach(neighborId => {
+                if (!visited.has(neighborId)) {
+                    visited.add(neighborId);
+                    queue.push(neighborId);
+                    distances.set(neighborId, distances.get(currentId) + 1);
+                }
+            });
+        }
+
+        return distances;
+    }
+
+    // Compute the shortest paths between all pairs of nodes
+    nodes.forEach(node => {
+        const distances = bfs(node.id);
+        distances.forEach(distance => {
+            if (distance > diameter) {
+                diameter = distance;
+            }
+        });
+    });
+
+    return diameter;
+}
+
 if (!streamId) {
     // Show instructions if no streamId is provided
     document.getElementById('loading').style.display = 'none';
@@ -165,61 +219,6 @@ if (!streamId) {
                 }
             });
         });
-
-        // Function to compute the network diameter
-        function computeNetworkDiameter(nodes, links) {
-            const adjacencyList = new Map();
-
-            // Build adjacency list
-            nodes.forEach(node => {
-                adjacencyList.set(node.id, []);
-            });
-
-            links.forEach(link => {
-                adjacencyList.get(link.source).push(link.target);
-                adjacencyList.get(link.target).push(link.source);
-            });
-
-            let diameter = 0;
-
-            // Function to perform BFS and find shortest paths from a source node
-            function bfs(startId) {
-                const visited = new Set();
-                const queue = [];
-                const distances = new Map();
-
-                visited.add(startId);
-                queue.push(startId);
-                distances.set(startId, 0);
-
-                while (queue.length > 0) {
-                    const currentId = queue.shift();
-                    const neighbors = adjacencyList.get(currentId);
-
-                    neighbors.forEach(neighborId => {
-                        if (!visited.has(neighborId)) {
-                            visited.add(neighborId);
-                            queue.push(neighborId);
-                            distances.set(neighborId, distances.get(currentId) + 1);
-                        }
-                    });
-                }
-
-                return distances;
-            }
-
-            // Compute the shortest paths between all pairs of nodes
-            nodes.forEach(node => {
-                const distances = bfs(node.id);
-                distances.forEach(distance => {
-                    if (distance > diameter) {
-                        diameter = distance;
-                    }
-                });
-            });
-
-            return diameter;
-        }
 
         // Calculate statistics for the legend
         const totalNodes = nodes.length;
