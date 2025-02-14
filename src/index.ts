@@ -41,10 +41,11 @@ app.get('/topology', async (req, res) => {
             return streamPartitions.map((sp) => sp.contentDeliveryLayerNeighbors.map((info) => info.peerDescriptor!)).flat()
         }, `stream-${streamId}-${Date.now()}`)
 
-        const result = topology.getNodes().map(({ id, ipAddress }) => ({
+        const result = topology.getNodes().map(({ id, applicationVersion, ipAddress }) => ({
             id,
+            applicationVersion,
             ipAddress,
-            neighbors: topology.getNeighbors(id, streamPartId)
+            neighbors: topology.getNeighbors(id, streamPartId),
         }))
 
         res.json(result)

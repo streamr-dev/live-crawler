@@ -7,6 +7,7 @@ export interface Node {
     id: DhtAddress
     streamPartNeighbors: Multimap<StreamPartID, DhtAddress>
     ipAddress?: string
+    applicationVersion: string
 }
 
 export class Topology {
@@ -26,6 +27,7 @@ export class Topology {
             const nodeId = toNodeId(info.peerDescriptor)
             this.nodes.set(nodeId, {
                 id: nodeId,
+                applicationVersion: info.applicationVersion,
                 streamPartNeighbors,
                 ipAddress: (info.peerDescriptor.ipAddress !== undefined) ? numberToIpv4(info.peerDescriptor.ipAddress) : undefined
             })
