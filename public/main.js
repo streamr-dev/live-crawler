@@ -93,7 +93,7 @@ function showNodeDetails(node) {
             <p><strong>Region:</strong> ${node.region || 'N/A'}</p>
             <p><strong>Neighbor count:</strong> ${node.neighbors ? node.neighbors.length : 0}</p>
             <p><strong>Control layer neighbor count:</strong> ${node.controlLayerNeighborCount}</p>
-            <p><strong>All stream partiions:</strong> ${node.allStreamPartitions.join(',<br>')}</p>
+            <p><strong>All stream partitions:</strong> ${node.allStreamPartitions.join(',<br>')}</p>
         `;
 
     content.innerHTML = detailsHTML;
