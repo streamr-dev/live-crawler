@@ -80,6 +80,9 @@
     <span class="close-button" onclick="closeNodeDetails()">×</span>
     <h3>Node Details</h3>
     <div id="node-details-content"></div>
+    <button id="visualize-propagation" onclick="visualizePropagation()" style="margin-top: 10px; padding: 8px 16px;">
+        Visualize Network Propagation
+    </button>
 </div>
 
 <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -88,9 +91,73 @@
     const urlParams = new URLSearchParams(window.location.search);
     const streamId = urlParams.get('streamId');
 
+    let currentNodeId = null;
+    let links = []; // Add this to store links globally
+
+    // Move highlightConnections function outside the fetch callback
+    function highlightConnections(startNodeId) {
+        const visited = new Set();
+        const queue = [startNodeId];
+
+        function highlightNextLevel() {
+            if (queue.length === 0) return;
+
+            const nextQueue = [];
+            queue.forEach(nodeId => {
+                if (!visited.has(nodeId)) {
+                    visited.add(nodeId);
+
+                    // Highlight the node
+                    d3.selectAll("circle")
+                        .filter(n => n.id === nodeId)
+                        .attr("fill", "red")
+                        .transition()
+                        .duration(2000)
+                        .attr("fill", "blue");
+
+                    // Highlight links and gather next level nodes
+                    links.forEach(linkData => {
+                        if (linkData.source.id === nodeId && !visited.has(linkData.target.id)) {
+                            d3.selectAll("line")
+                                .filter(l => l.source.id === linkData.source.id && l.target.id === linkData.target.id)
+                                .attr("stroke", "red")
+                                .attr("stroke-width", 2)
+                                .transition()
+                                .duration(2000)
+                                .attr("stroke", "#999")
+                                .attr("stroke-width", 1);
+                            nextQueue.push(linkData.target.id);
+                        } else if (linkData.target.id === nodeId && !visited.has(linkData.source.id)) {
+                            d3.selectAll("line")
+                                .filter(l => l.source.id === linkData.source.id && l.target.id === linkData.target.id)
+                                .attr("stroke", "red")
+                                .attr("stroke-width", 2)
+                                .transition()
+                                .duration(2000)
+                                .attr("stroke", "#999")
+                                .attr("stroke-width", 1);
+                            nextQueue.push(linkData.source.id);
+                        }
+                    });
+                }
+            });
+
+            // Move to the next level
+            queue.length = 0;
+            queue.push(...nextQueue);
+
+            // Schedule the next level highlighting
+            setTimeout(highlightNextLevel, 600);
+        }
+
+        // Start the highlighting process
+        highlightNextLevel();
+    }
+
     function showNodeDetails(node) {
         const detailsDiv = document.getElementById('node-details');
         const content = document.getElementById('node-details-content');
+        currentNodeId = node.id; // Store the current node ID
 
         // Build details content
         let detailsHTML = `
@@ -111,6 +178,12 @@
 
     function closeNodeDetails() {
         document.getElementById('node-details').style.display = 'none';
+    }
+
+    function visualizePropagation() {
+        if (currentNodeId) {
+            highlightConnections(currentNodeId);
+        }
     }
 
     if (!streamId) {
@@ -153,12 +226,12 @@
                 nodeById.set(d.id, node);
             });
 
-            const links = [];
+            // Update the global links array instead of creating a new one
+            links = [];
             const linkSet = new Set();
             data.forEach(function(d) {
                 const sourceId = d.id;
                 d.neighbors.forEach(function(targetId) {
-                    // To avoid duplicates, create a unique key for each link
                     const key = [sourceId, targetId].sort().join("-");
                     if (!linkSet.has(key)) {
                         linkSet.add(key);
@@ -278,7 +351,6 @@
                 .on("click", function(event, d) {
                     event.stopPropagation();
                     showNodeDetails(d);
-                    highlightConnections(d.id);
                 });
 
             // Add labels to nodes
@@ -309,66 +381,6 @@
             // Variables to keep track of highlighted nodes and links
             let highlightedNodes = new Set();
             let highlightedLinks = new Set();
-
-            // Function to highlight connections progressively
-            function highlightConnections(startNodeId) {
-                const visited = new Set();
-                const queue = [startNodeId];
-                let currentLevel = 0;
-
-                function highlightNextLevel() {
-                    if (queue.length === 0) return;
-
-                    const nextQueue = [];
-                    queue.forEach(nodeId => {
-                        if (!visited.has(nodeId)) {
-                            visited.add(nodeId);
-
-                            // Highlight the node
-                            circles.filter(n => n.id === nodeId)
-                                .attr("fill", "red")
-                                .transition()
-                                .duration(2000)
-                                .attr("fill", "blue");
-
-                            // Highlight links and gather next level nodes
-                            links.forEach(linkData => {
-                                if (linkData.source.id === nodeId && !visited.has(linkData.target.id)) {
-                                    d3.selectAll("line")
-                                        .filter(l => l.source.id === linkData.source.id && l.target.id === linkData.target.id)
-                                        .attr("stroke", "red")
-                                        .attr("stroke-width", 2)
-                                        .transition()
-                                        .duration(2000)
-                                        .attr("stroke", "#999")
-                                        .attr("stroke-width", 1);
-                                    nextQueue.push(linkData.target.id);
-                                } else if (linkData.target.id === nodeId && !visited.has(linkData.source.id)) {
-                                    d3.selectAll("line")
-                                        .filter(l => l.source.id === linkData.source.id && l.target.id === linkData.target.id)
-                                        .attr("stroke", "red")
-                                        .attr("stroke-width", 2)
-                                        .transition()
-                                        .duration(2000)
-                                        .attr("stroke", "#999")
-                                        .attr("stroke-width", 1);
-                                    nextQueue.push(linkData.source.id);
-                                }
-                            });
-                        }
-                    });
-
-                    // Move to the next level
-                    queue.length = 0;
-                    queue.push(...nextQueue);
-
-                    // Schedule the next level highlighting
-                    setTimeout(highlightNextLevel, 600);
-                }
-
-                // Start the highlighting process
-                highlightNextLevel();
-            }
 
             // Add click event to the SVG background to reset highlighting
             svg.on("click", function(event) {
