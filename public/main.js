@@ -230,9 +230,10 @@ if (!streamId) {
         const averageNeighborCount = (totalNeighborCount / totalNodes).toFixed(2);
         const networkDiameter = computeNetworkDiameter(nodes, links);
 
-        // Set up the SVG canvas dimensions
-        const width = 1400;
-        const height = 900;
+        // Set up the SVG canvas dimensions responsively
+        const margin = { right: 200 }; // Space for legend
+        const width = window.innerWidth - margin.right;
+        const height = window.innerHeight;
 
         // Define zoom behavior
         const zoom = d3.zoom()
@@ -242,9 +243,27 @@ if (!streamId) {
         // Create the SVG and apply zoom behavior
         const svg = d3.select("body")
             .append("svg")
-            .attr("width", width + 200) // Extra width for the legend
+            .attr("width", width + margin.right)
             .attr("height", height)
             .call(zoom);
+
+        // Update SVG size on window resize
+        window.addEventListener('resize', function() {
+            const newWidth = window.innerWidth - margin.right;
+            const newHeight = window.innerHeight;
+
+            svg
+                .attr("width", newWidth + margin.right)
+                .attr("height", newHeight);
+
+            // Update force center
+            simulation.force("center", d3.forceCenter(newWidth / 2, newHeight / 2));
+
+            // Update legend position
+            legend.attr("transform", `translate(${newWidth + 20}, 50)`);
+
+            simulation.alpha(0.3).restart();
+        });
 
         // Create a container for all graph elements
         const container = svg.append("g");
@@ -372,7 +391,7 @@ if (!streamId) {
         // Add legend to the right side
         const legend = svg.append("g")
             .attr("class", "legend")
-            .attr("transform", "translate(" + (width + 20) + ", 50)");
+            .attr("transform", `translate(${width + 20}, 50)`);
 
         legend.append("text")
             .text("Network Statistics")

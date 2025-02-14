@@ -1,3 +1,17 @@
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+}
+
+svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
 .links line {
     stroke: #999;
     stroke-opacity: 0.6;
@@ -15,35 +29,39 @@ text {
 
 .legend {
     font-family: sans-serif;
-    font-size: 14px;
+    font-size: clamp(12px, 1.5vw, 14px);
 }
 
 .loading {
-    position: absolute;
+    position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     font-family: sans-serif;
-    font-size: 20px;
+    font-size: clamp(16px, 2vw, 20px);
     color: #333;
 }
 
 .instructions {
-    position: absolute;
+    position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     font-family: sans-serif;
-    font-size: 20px;
+    font-size: clamp(16px, 2vw, 20px);
     color: #333;
     text-align: center;
+    width: 90%;
+    max-width: 600px;
 }
 
 .node-details {
     position: fixed;
     right: 20px;
     bottom: 20px;
-    width: 400px;
+    width: min(400px, 90vw);
+    max-height: 80vh;
+    overflow-y: auto;
     background: white;
     border: 1px solid #ccc;
     border-radius: 5px;
@@ -51,6 +69,7 @@ text {
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     font-family: sans-serif;
     display: none;
+    font-size: clamp(12px, 1.5vw, 14px);
 }
 
 .close-button {
@@ -58,5 +77,17 @@ text {
     right: 10px;
     top: 10px;
     cursor: pointer;
-    font-size: 20px;
+    font-size: clamp(16px, 2vw, 20px);
+}
+
+@media (max-width: 768px) {
+    .legend {
+        font-size: 12px;
+    }
+
+    .node-details {
+        width: 90vw;
+        right: 50%;
+        transform: translateX(50%);
+    }
 }
