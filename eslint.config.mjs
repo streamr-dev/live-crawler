@@ -4,7 +4,8 @@ export default [
     {
         ignores: [
             'node_modules/**',
-            'dist/**'
+            'dist/**',
+            'public/**'
         ]
     },
     ...streamr,
@@ -57,7 +58,7 @@ export default [
                 multiline: { delimiter: 'none' }
             }],
             '@stylistic/object-curly-spacing': ['error', 'always'],
-            '@typescript-eslint/restrict-template-expressions': ['error', { 
+            '@typescript-eslint/restrict-template-expressions': ['error', {
                 allowAny: false,
                 allowBoolean: true,
                 allowNullish: true,

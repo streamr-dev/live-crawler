@@ -20,12 +20,12 @@ export interface Node {
 export class Topology {
     private nodes: Map<DhtAddress, Node> = new Map()
 
-    private constructor(infos: NormalizedNodeInfo[]) {
+    private constructor() {
         this.nodes = new Map()
     }
 
     public static async create(infos: NormalizedNodeInfo[]): Promise<Topology> {
-        const topology = new Topology(infos)
+        const topology = new Topology()
         const nodeIds = new Set(...[infos.map((info) => toNodeId(info.peerDescriptor))])
         await Promise.all(infos.map((info) => topology.initializeNode(info, nodeIds)))
         return topology
@@ -50,7 +50,7 @@ export class Topology {
             ? numberToIpv4(info.peerDescriptor.ipAddress)
             : undefined
 
-        let node: Node = {
+        const node: Node = {
             id: nodeId,
             applicationVersion: info.applicationVersion,
             websocketUrl,
