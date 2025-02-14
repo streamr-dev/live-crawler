@@ -216,7 +216,7 @@
         }, 1000);
 
         // Fetch topology data from localhost with streamId as a query parameter
-        fetch(`http://localhost:3000/topology?streamId=${streamId}`).then(function(response) {
+        fetch(`/topology?streamId=${streamId}`).then(function(response) {
             return response.json()
         }).then(function(data) {
             // Remove loading indicator
