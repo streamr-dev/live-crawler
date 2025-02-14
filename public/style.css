@@ -1,0 +1,62 @@
+.links line {
+    stroke: #999;
+    stroke-opacity: 0.6;
+}
+
+.nodes circle {
+    stroke: #0000ff;
+    stroke-width: 1.5px;
+}
+
+text {
+    pointer-events: none;
+    font-family: sans-serif;
+}
+
+.legend {
+    font-family: sans-serif;
+    font-size: 14px;
+}
+
+.loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: sans-serif;
+    font-size: 20px;
+    color: #333;
+}
+
+.instructions {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: sans-serif;
+    font-size: 20px;
+    color: #333;
+    text-align: center;
+}
+
+.node-details {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    width: 400px;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 15px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    font-family: sans-serif;
+    display: none;
+}
+
+.close-button {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    cursor: pointer;
+    font-size: 20px;
+}

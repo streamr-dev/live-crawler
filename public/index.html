@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Network Graph Visualization with Legend</title>
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgo=">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="loading" class="loading">Loading... <span id="timer">0</span>s</div>
+<div id="instructions" class="instructions" style="display: none;">
+    <p>Please provide a <strong>streamId</strong> as a query parameter in the URL.</p>
+    <p>Example: <code>?streamId=yourStreamIdHere</code></p>
+</div>
+
+<div id="node-details" class="node-details">
+    <span class="close-button" onclick="closeNodeDetails()">×</span>
+    <h3>Node Details</h3>
+    <div id="node-details-content"></div>
+    <button id="visualize-propagation" onclick="visualizePropagation()" style="margin-top: 10px; padding: 8px 16px;">
+        Visualize Network Propagation
+    </button>
+</div>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="main.js"></script>
+</body>
+</html>

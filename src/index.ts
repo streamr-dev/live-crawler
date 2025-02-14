@@ -14,9 +14,7 @@ const logger = new Logger(module)
 
 app.use(cors())
 
-app.get('/', (_req, res) => {
-    res.sendFile(path.join(__dirname, '../index.html'))
-})
+app.use(express.static(path.join(__dirname, '../public')))
 
 const streamrClient = new StreamrClient({
     metrics: false
