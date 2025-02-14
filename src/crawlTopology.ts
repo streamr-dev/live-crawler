@@ -27,7 +27,7 @@ const createNodeInfoLogOutput = (nodeInfo: NormalizedNodeInfo) => {
             id: sp.id,
             contentDeliveryLayerNeighbors: sp.contentDeliveryLayerNeighbors.map((n: any) => toNodeId(n.peerDescriptor))  // TODO better type
         })),
-        version: nodeInfo.version
+        version: nodeInfo.applicationVersion
     }
 }
 
