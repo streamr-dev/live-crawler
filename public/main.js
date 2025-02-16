@@ -87,11 +87,11 @@ function showNodeDetails(node) {
     let detailsHTML = `
             <p><strong>Node ID:</strong> ${node.id}</p>
             <p><strong>IP Address:</strong> ${node.ipAddress || 'N/A'}</p>
-            <p><strong>Country:</strong> ${node?.location?.country || 'N/A'}</p>
+            <p><strong>Location:</strong> ${(node?.location?.country || 'N/A') + '/' + (node?.location?.city || 'N/A')}</p>
+            <p><strong>Region:</strong> ${node.region || 'N/A'}</p>
             <p><strong>Application version:</strong> ${node.applicationVersion}</p>
             <p><strong>Websocket URL:</strong> ${node.websocketUrl || 'N/A'}</p>
             <p><strong>Node type:</strong> ${node.nodeType}</p>
-            <p><strong>Region:</strong> ${node.region || 'N/A'}</p>
             <p><strong>Neighbor count:</strong> ${node.neighbors ? node.neighbors.length : 0}</p>
             <p><strong>Control layer neighbor count:</strong> ${node.controlLayerNeighborCount}</p>
             <p><strong>All stream partiions:</strong> ${node.allStreamPartitions.join(',<br>')}</p>
