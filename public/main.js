@@ -141,14 +141,14 @@ if (!streamId) {
             const node = {
                 id: d.id,
                 ipAddress: d.ipAddress,
+                location: d.location,
+                region: d.region,
                 applicationVersion: d.applicationVersion,
                 websocketUrl: d.websocketUrl,
                 nodeType: d.nodeType,
-                region: d.region,
                 neighbors: d.neighbors,
                 controlLayerNeighborCount: d.controlLayerNeighborCount,
                 allStreamPartitions: d.allStreamPartitions,
-                location: d.location
             };
             nodes.push(node);
             nodeById.set(d.id, node);

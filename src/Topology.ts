@@ -3,6 +3,7 @@ import { DhtAddress, StreamPartID } from '@streamr/sdk'
 import { Multimap, numberToIpv4, StreamPartIDUtils } from '@streamr/utils'
 import { NormalizedNodeInfo } from './NetworkNodeFacade'
 import { NodeType } from "@streamr/trackerless-network/dist/generated/packages/dht/protos/DhtRpc"
+import { fetchLocationData } from "./fetchLocationData"
 
 export interface Node {
     id: DhtAddress
@@ -50,36 +51,22 @@ export class Topology {
             ? numberToIpv4(info.peerDescriptor.ipAddress)
             : undefined
 
-        const node: Node = {
+        const location = ipAddress !== undefined
+            ? await fetchLocationData(ipAddress)
+            : undefined
+
+        this.nodes.set(nodeId, {
             id: nodeId,
+            ipAddress,
+            location,
+            region: info.peerDescriptor.region,
             applicationVersion: info.applicationVersion,
             websocketUrl,
             nodeType: info.peerDescriptor.type === NodeType.NODEJS ? 'NODEJS' : 'BROWSER',
-            ipAddress,
-            region: info.peerDescriptor.region,
             streamPartNeighbors,
             controlLayerNeighborCount: info.controlLayer.neighbors.length,
-            allStreamPartitions,
-            location: undefined
-        }
-
-        // Store the node first
-        this.nodes.set(nodeId, node)
-
-        // Then fetch location data if IP is available
-        if (ipAddress) {
-            try {
-                const locationData = await this.fetchLocationData(ipAddress)
-                // Update the existing node with location data
-                const updatedNode = this.nodes.get(nodeId)
-                if (updatedNode) {
-                    updatedNode.location = locationData
-                    this.nodes.set(nodeId, updatedNode)
-                }
-            } catch (error) {
-                console.warn(`Failed to fetch location data for IP ${ipAddress}:`, error)
-            }
-        }
+            allStreamPartitions
+        })
     }
 
     getNodes(): Node[] {
@@ -88,22 +75,5 @@ export class Topology {
 
     getNeighbors(nodeId: DhtAddress, streamPartId: StreamPartID): DhtAddress[] {
         return this.nodes.get(nodeId)?.streamPartNeighbors.get(streamPartId) ?? []
-    }
-
-    private async fetchLocationData(ipAddress: string): Promise<any> {
-        const response = await fetch(`https://ipinfo.io/${ipAddress}?token=29de457f326044`)
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`)
-        }
-        const data = await response.json() as any
-        return {
-            city: data?.city,
-            country: data?.country,
-            loc: data?.loc,
-            hostname: data?.hostname,
-            org: data?.org,
-            postal: data?.postal,
-            timezone: data?.timezone,
-        }
     }
 }
