@@ -87,10 +87,11 @@ function showNodeDetails(node) {
     let detailsHTML = `
             <p><strong>Node ID:</strong> ${node.id}</p>
             <p><strong>IP Address:</strong> ${node.ipAddress || 'N/A'}</p>
+            <p><strong>Location:</strong> ${(node?.location?.country || 'N/A') + '/' + (node?.location?.city || 'N/A')}</p>
+            <p><strong>Region:</strong> ${node.region || 'N/A'}</p>
             <p><strong>Application version:</strong> ${node.applicationVersion}</p>
             <p><strong>Websocket URL:</strong> ${node.websocketUrl || 'N/A'}</p>
             <p><strong>Node type:</strong> ${node.nodeType}</p>
-            <p><strong>Region:</strong> ${node.region || 'N/A'}</p>
             <p><strong>Neighbor count:</strong> ${node.neighbors ? node.neighbors.length : 0}</p>
             <p><strong>Control layer neighbor count:</strong> ${node.controlLayerNeighborCount}</p>
             <p><strong>All stream partitions:</strong> ${node.allStreamPartitions.join(',<br>')}</p>
@@ -180,9 +181,9 @@ if (!streamId) {
     }, 1000);
 
     // Fetch topology data from localhost with streamId as a query parameter
-    fetch(`/topology?streamId=${streamId}`).then(function(response) {
+    fetch(`/topology?streamId=${streamId}`).then(function (response) {
         return response.json()
-    }).then(function(data) {
+    }).then(function (data) {
         // Remove loading indicator
         document.getElementById('loading').style.display = 'none';
         clearInterval(timerInterval);
@@ -190,17 +191,18 @@ if (!streamId) {
         // Build nodes and links
         const nodes = [];
         const nodeById = new Map();
-        data.forEach(function(d) {
+        data.forEach(function (d) {
             const node = {
                 id: d.id,
                 ipAddress: d.ipAddress,
+                location: d.location,
+                region: d.region,
                 applicationVersion: d.applicationVersion,
                 websocketUrl: d.websocketUrl,
                 nodeType: d.nodeType,
-                region: d.region,
                 neighbors: d.neighbors,
                 controlLayerNeighborCount: d.controlLayerNeighborCount,
-                allStreamPartitions: d.allStreamPartitions
+                allStreamPartitions: d.allStreamPartitions,
             };
             nodes.push(node);
             nodeById.set(d.id, node);
@@ -209,9 +211,9 @@ if (!streamId) {
         // Update the global links array instead of creating a new one
         links = [];
         const linkSet = new Set();
-        data.forEach(function(d) {
+        data.forEach(function (d) {
             const sourceId = d.id;
-            d.neighbors.forEach(function(targetId) {
+            d.neighbors.forEach(function (targetId) {
                 const key = [sourceId, targetId].sort().join("-");
                 if (!linkSet.has(key)) {
                     linkSet.add(key);
@@ -270,7 +272,7 @@ if (!streamId) {
 
         // Initialize the simulation
         const simulation = d3.forceSimulation(nodes)
-            .force("link", d3.forceLink(links).id(function(d) { return d.id; }).distance(100))
+            .force("link", d3.forceLink(links).id(function (d) { return d.id; }).distance(100))
             .force("charge", d3.forceManyBody().strength(-300))
             .force("center", d3.forceCenter(width / 2, height / 2));
 
@@ -292,7 +294,7 @@ if (!streamId) {
         const circles = node.append("circle")
             .attr("r", 10)
             .attr("fill", "blue")
-            .on("click", function(event, d) {
+            .on("click", function (event, d) {
                 event.stopPropagation();
                 showNodeDetails(d);
             });
@@ -300,9 +302,9 @@ if (!streamId) {
         // Add labels to nodes
         const labels = node.append("text")
             .attr("dy", -15)
-            .text(function(d) {
+            .text(function (d) {
                 if (d.ipAddress) {
-                    return d.id.substring(0, 4) + "..." + d.id.substring(d.id.length - 4) + " (" + d.ipAddress + ")";
+                    return d.id.substring(0, 4) + "..." + d.id.substring(d.id.length - 4) + " (" + d.ipAddress + ")" + " (" + d.location?.country + "/" + d.location?.city + ")";
                 } else {
                     return d.id.substring(0, 6);
                 }
@@ -312,7 +314,7 @@ if (!streamId) {
 
         // Add tooltips to display full node ID and IP address
         node.append("title")
-            .text(function(d) {
+            .text(function (d) {
                 return "Node ID: " + d.id + "\nIP Address: " + (d.ipAddress ? d.ipAddress : "N/A");
             });
 
@@ -327,7 +329,7 @@ if (!streamId) {
         let highlightedLinks = new Set();
 
         // Add click event to the SVG background to reset highlighting
-        svg.on("click", function(event) {
+        svg.on("click", function (event) {
             if (event.target === svg.node()) {
                 resetHighlighting();
                 closeNodeDetails();
@@ -351,13 +353,13 @@ if (!streamId) {
         // Update positions on each tick of the simulation
         simulation.on("tick", () => {
             link
-                .attr("x1", function(d) { return d.source.x; })
-                .attr("y1", function(d) { return d.source.y; })
-                .attr("x2", function(d) { return d.target.x; })
-                .attr("y2", function(d) { return d.target.y; });
+                .attr("x1", function (d) { return d.source.x; })
+                .attr("y1", function (d) { return d.source.y; })
+                .attr("x2", function (d) { return d.target.x; })
+                .attr("y2", function (d) { return d.target.y; });
 
             node
-                .attr("transform", function(d) {
+                .attr("transform", function (d) {
                     return "translate(" + d.x + "," + d.y + ")";
                 });
         });

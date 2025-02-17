@@ -82,5 +82,6 @@ export const crawlTopology = async (
     }
 
     logger.info(`Topology crawled`, { runId, timeTaken: Date.now() - startTime, nodeCount: nodeInfos.size, errorCount: errorNodes.size })
-    return new Topology([...nodeInfos.values()])
+    const topology = await Topology.create([...nodeInfos.values()])
+    return topology
 }
