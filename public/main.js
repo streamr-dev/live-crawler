@@ -150,7 +150,7 @@ function visualizePropagation() {
     }
 }
 
-function computeNetworkDiameter(nodes, links) {
+function computeNetworkStats(nodes, links) {
     const adjacencyList = new Map();
 
     nodes.forEach(node => {
@@ -163,6 +163,8 @@ function computeNetworkDiameter(nodes, links) {
     });
 
     let diameter = 0;
+    let totalPathLength = 0;
+    let totalPaths = 0;
 
     // Function to perform BFS and find shortest paths from a source node
     function bfs(startId) {
@@ -193,14 +195,19 @@ function computeNetworkDiameter(nodes, links) {
     // Compute the shortest paths between all pairs of nodes
     nodes.forEach(node => {
         const distances = bfs(node.id);
-        distances.forEach(distance => {
-            if (distance > diameter) {
-                diameter = distance;
+        distances.forEach((distance, targetId) => {
+            if (targetId !== node.id) {  // Don't count paths to self
+                totalPathLength += distance;
+                totalPaths++;
+                if (distance > diameter) {
+                    diameter = distance;
+                }
             }
         });
     });
 
-    return diameter;
+    const averagePathLength = (totalPathLength / totalPaths).toFixed(2);
+    return { diameter, averagePathLength };
 }
 
 function getNodeLabel(d) {
