@@ -65,7 +65,7 @@ function highlightConnections(startNodeId) {
     highlightNextLevel();
 }
 
-function showNodeDetails(node) {
+function showNodeDetails(node, nodeById) {
     const detailsDiv = document.getElementById('node-details');
     const content = document.getElementById('node-details-content');
     currentNodeId = node.id; // Store the current node ID
@@ -92,9 +92,9 @@ function showNodeDetails(node) {
             <p><strong>Application version:</strong> ${node.applicationVersion}</p>
             <p><strong>Websocket URL:</strong> ${node.websocketUrl || 'N/A'}</p>
             <p><strong>Node type:</strong> ${node.nodeType}</p>
-            <p><strong>Neighbor count:</strong> ${node.neighbors ? node.neighbors.length : 0}</p>
+            <p><strong>Neighbors (${node.neighbors.length}):</strong><br> ${node.neighbors.map(neighborId => getNodeLabel(nodeById.get(neighborId))).join(',<br>')}</p>
             <p><strong>Control layer neighbor count:</strong> ${node.controlLayerNeighborCount}</p>
-            <p><strong>All stream partitions:</strong> ${node.allStreamPartitions.join(',<br>')}</p>
+            <p><strong>All stream partitions (${node.allStreamPartitions.length}):</strong> ${node.allStreamPartitions.join(',<br>')}</p>
         `;
 
     content.innerHTML = detailsHTML;
@@ -165,6 +165,10 @@ function computeNetworkDiameter(nodes, links) {
     });
 
     return diameter;
+}
+
+function getNodeLabel(d) {
+    return d.id.substring(0, 4) + "..." + d.id.substring(d.id.length - 4) + " (" + d.ipAddress + ")" + " (" + d.location?.country + "/" + d.location?.city + ")";
 }
 
 if (!streamId) {
@@ -296,18 +300,14 @@ if (!streamId) {
             .attr("fill", "blue")
             .on("click", function (event, d) {
                 event.stopPropagation();
-                showNodeDetails(d);
+                showNodeDetails(d, nodeById);
             });
 
         // Add labels to nodes
         const labels = node.append("text")
             .attr("dy", -15)
             .text(function (d) {
-                if (d.ipAddress) {
-                    return d.id.substring(0, 4) + "..." + d.id.substring(d.id.length - 4) + " (" + d.ipAddress + ")" + " (" + d.location?.country + "/" + d.location?.city + ")";
-                } else {
-                    return d.id.substring(0, 6);
-                }
+                return getNodeLabel(d);
             })
             .attr("font-size", "10px")
             .attr("text-anchor", "middle");
