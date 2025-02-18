@@ -33,10 +33,8 @@ app.get('/topology', async (req, res) => {
         const localNode = new NetworkNodeFacade((await (streamrClient.getNode()).getNode()) as NetworkNode)
         const entryPoints = await localNode.fetchStreamPartEntryPoints(streamPartId)
         const topology = await crawlTopology(localNode, entryPoints, (nodeInfo: NormalizedNodeInfo) => {
-            const streamPartitions = nodeInfo.streamPartitions.filter(
-                (sp) => StreamPartIDUtils.getStreamID(sp.id as StreamPartID) === streamId
-            )
-            return streamPartitions.map((sp) => sp.contentDeliveryLayerNeighbors.map((info) => info.peerDescriptor!)).flat()
+            const spInfo = nodeInfo.streamPartitions.find(({ id }) => id === streamPartId)
+            return spInfo?.contentDeliveryLayerNeighbors.map(({ peerDescriptor }) => peerDescriptor) ?? []
         }, `stream-${streamId}-${Date.now()}`)
 
         const result = topology.getNodes().map((node) => ({
