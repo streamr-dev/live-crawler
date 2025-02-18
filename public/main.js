@@ -291,6 +291,9 @@ if (!streamId) {
         document.getElementById('loading').style.display = 'none';
         clearInterval(timerInterval);
 
+        // Show the legend
+        document.getElementById('legend').style.display = 'block';
+
         // Build nodes and links
         const nodes = [];
         const nodeById = new Map();
