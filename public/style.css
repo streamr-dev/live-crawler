@@ -30,7 +30,6 @@ text {
     padding: 15px;
     font-family: sans-serif;
     font-size: clamp(12px, 1.5vw, 14px);
-    z-index: 1000;
 }
 
 .legend h3 {
