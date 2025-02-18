@@ -1,3 +1,12 @@
+const COLORS = {
+    NODE_DEFAULT: 'blue',
+    HIGHLIGHT_RING: 'blue',
+    NODE_INACTIVE: '#999',
+    LINK_DEFAULT: '#999',
+    NODE_PROPAGATION_HIGHLIGHT: 'red',
+    LINK_PROPAGATION_HIGHLIGHT: 'red'
+};
+
 // Extract streamId from the URL query parameters
 const urlParams = new URLSearchParams(window.location.search);
 const streamId = urlParams.get('streamId');
@@ -21,31 +30,31 @@ function highlightConnections(startNodeId) {
                 // Highlight the node
                 d3.selectAll("circle")
                     .filter(n => n.id === nodeId)
-                    .attr("fill", "red")
+                    .attr("fill", COLORS.NODE_PROPAGATION_HIGHLIGHT)
                     .transition()
                     .duration(2000)
-                    .attr("fill", "blue");
+                    .attr("fill", COLORS.NODE_DEFAULT);
 
                 // Highlight links and gather next level nodes
                 links.forEach(linkData => {
                     if (linkData.source.id === nodeId && !visited.has(linkData.target.id)) {
                         d3.selectAll("line")
                             .filter(l => l.source.id === linkData.source.id && l.target.id === linkData.target.id)
-                            .attr("stroke", "red")
+                            .attr("stroke", COLORS.LINK_PROPAGATION_HIGHLIGHT)
                             .attr("stroke-width", 2)
                             .transition()
                             .duration(2000)
-                            .attr("stroke", "#999")
+                            .attr("stroke", COLORS.LINK_DEFAULT)
                             .attr("stroke-width", 1);
                         nextQueue.push(linkData.target.id);
                     } else if (linkData.target.id === nodeId && !visited.has(linkData.source.id)) {
                         d3.selectAll("line")
                             .filter(l => l.source.id === linkData.source.id && l.target.id === linkData.target.id)
-                            .attr("stroke", "red")
+                            .attr("stroke", COLORS.LINK_PROPAGATION_HIGHLIGHT)
                             .attr("stroke-width", 2)
                             .transition()
                             .duration(2000)
-                            .attr("stroke", "#999")
+                            .attr("stroke", COLORS.LINK_DEFAULT)
                             .attr("stroke-width", 1);
                         nextQueue.push(linkData.source.id);
                     }
@@ -75,9 +84,9 @@ function showNodeDetails(node, nodeById) {
 
     // Reset all nodes and links to default style first
     d3.selectAll("circle.highlight-ring").remove();
-    d3.selectAll(".nodes circle").attr("fill", "blue");
+    d3.selectAll(".nodes circle").attr("fill", COLORS.NODE_DEFAULT);
     d3.selectAll(".links line")
-        .attr("stroke", "#999")
+        .attr("stroke", COLORS.LINK_DEFAULT)
         .attr("stroke-width", 1);
 
     // Add highlight ring to selected node
@@ -87,19 +96,13 @@ function showNodeDetails(node, nodeById) {
         .attr("class", "highlight-ring")
         .attr("r", 14)
         .attr("fill", "none")
-        .attr("stroke", "blue")
-        .attr("stroke-width", 2);
-
-    // Add highlight ring to neighbor nodes
-    d3.selectAll(".nodes g")
-        .filter(d => node.neighbors.includes(d.id))
-        .append("circle")
-        .attr("class", "highlight-ring")
-        .attr("r", 14)
-        .attr("fill", "none")
-        .attr("stroke", "blue")
+        .attr("stroke", COLORS.HIGHLIGHT_RING)
         .attr("stroke-width", 2)
         .attr("stroke-dasharray", "4,4");
+
+    d3.selectAll(".nodes circle")
+        .filter(d => d.id !== node.id && !node.neighbors.includes(d.id))
+        .attr("fill", COLORS.NODE_INACTIVE);
 
     // Highlight links connected to the selected node
     d3.selectAll(".links line")
@@ -134,9 +137,9 @@ function closeNodeDetails() {
 
     // Reset all visual elements to default state
     d3.selectAll("circle.highlight-ring").remove();
-    d3.selectAll(".nodes circle").attr("fill", "blue");
+    d3.selectAll(".nodes circle").attr("fill", COLORS.NODE_DEFAULT);
     d3.selectAll(".links line")
-        .attr("stroke", "#999")
+        .attr("stroke", COLORS.LINK_DEFAULT)
         .attr("stroke-width", 1);
 }
 
@@ -341,7 +344,7 @@ if (!streamId) {
 
         const circles = node.append("circle")
             .attr("r", 10)
-            .attr("fill", "blue")
+            .attr("fill", COLORS.NODE_DEFAULT)
             .on("click", function (event, d) {
                 event.stopPropagation();
                 showNodeDetails(d, nodeById);
@@ -383,11 +386,11 @@ if (!streamId) {
         // Function to reset highlighting
         function resetHighlighting() {
             // Reset node colors
-            circles.attr("fill", "blue");
+            circles.attr("fill", COLORS.NODE_DEFAULT);
             highlightedNodes.clear();
 
             // Reset link styles
-            link.attr("stroke", "#999").attr("stroke-width", 1);
+            link.attr("stroke", COLORS.LINK_DEFAULT).attr("stroke-width", 1);
             highlightedLinks.clear();
 
             // Remove highlight rings
