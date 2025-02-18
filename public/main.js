@@ -14,6 +14,10 @@ const streamId = urlParams.get('streamId');
 let currentNodeId = null;
 let links = [];
 
+function toggleSection(section) {
+    section.classList.toggle('collapsed');
+}
+
 function highlightConnections(startNodeId) {
     const visited = new Set();
     const queue = [startNodeId];

@@ -24,13 +24,13 @@
     <p>Mean node degree: <span id="mean-degree">-</span></p>
     <p>Network Diameter: <span id="network-diameter">-</span></p>
     <p>Average Path Length: <span id="average-path-length">-</span></p>
-    <div class="stats-section">
-        <h3>Countries</h3>
-        <div id="country-stats"></div>
+    <div class="stats-section collapsed">
+        <h3 onclick="toggleSection(this.parentElement)">Countries</h3>
+        <div class="section-content" id="country-stats"></div>
     </div>
-    <div class="stats-section">
-        <h3>Application Versions</h3>
-        <div id="version-stats"></div>
+    <div class="stats-section collapsed">
+        <h3 onclick="toggleSection(this.parentElement)">Application Versions</h3>
+        <div class="section-content" id="version-stats"></div>
     </div>
 </div>
 

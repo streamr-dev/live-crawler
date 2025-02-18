@@ -48,6 +48,27 @@ text {
     padding-top: 10px;
 }
 
+.stats-section h3 {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.stats-section h3::before {
+    content: '▼';
+    font-size: 0.8em;
+}
+
+.stats-section.collapsed h3::before {
+    content: '▶';
+}
+
+.stats-section.collapsed .section-content {
+    display: none;
+}
+
 .loading {
     position: fixed;
     top: 50%;
