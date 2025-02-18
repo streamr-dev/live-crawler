@@ -29,10 +29,14 @@ function highlightConnections(startNodeId) {
                 // Highlight the node
                 d3.selectAll("circle")
                     .filter(n => n.id === nodeId)
-                    .attr("fill", COLORS.NODE_PROPAGATION_HIGHLIGHT)
-                    .transition()
-                    .duration(2000)
-                    .attr("fill", COLORS.NODE_DEFAULT);
+                    .each(function() {
+                        const originalColor = d3.select(this).attr("fill");
+                        d3.select(this)
+                            .attr("fill", COLORS.NODE_PROPAGATION_HIGHLIGHT)
+                            .transition()
+                            .duration(2000)
+                            .attr("fill", originalColor);
+                    });
 
                 // Highlight links and gather next level nodes
                 links.forEach(linkData => {
