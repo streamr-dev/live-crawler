@@ -66,6 +66,9 @@ function highlightConnections(startNodeId) {
 }
 
 function showNodeDetails(node, nodeById) {
+    // Update URL hash without triggering a page reload
+    window.history.replaceState(null, '', `#${node.id}`);
+
     const detailsDiv = document.getElementById('node-details');
     const content = document.getElementById('node-details-content');
     currentNodeId = node.id; // Store the current node ID
@@ -92,7 +95,10 @@ function showNodeDetails(node, nodeById) {
             <p><strong>Application version:</strong> ${node.applicationVersion}</p>
             <p><strong>Websocket URL:</strong> ${node.websocketUrl || 'N/A'}</p>
             <p><strong>Node type:</strong> ${node.nodeType}</p>
-            <p><strong>Neighbors (${node.neighbors.length}):</strong><br> ${node.neighbors.map(neighborId => getNodeLabel(nodeById.get(neighborId))).join(',<br>')}</p>
+            <p><strong>Neighbors (${node.neighbors.length}):</strong><br> ${node.neighbors.map(neighborId => {
+                const neighbor = nodeById.get(neighborId);
+                return `<a href="#${neighborId}" style="text-decoration: none; color: blue;">${getNodeLabel(neighbor)}</a>`;
+            }).join(',<br>')}</p>
             <p><strong>Control layer neighbor count:</strong> ${node.controlLayerNeighborCount}</p>
             <p><strong>All stream partitions (${node.allStreamPartitions.length}):</strong> ${node.allStreamPartitions.join(',<br>')}</p>
         `;
@@ -102,8 +108,9 @@ function showNodeDetails(node, nodeById) {
 }
 
 function closeNodeDetails() {
+    // Remove hash from URL when closing details
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
     document.getElementById('node-details').style.display = 'none';
-    // Remove highlight ring when closing details
     d3.selectAll("circle.highlight-ring").remove();
 }
 
@@ -169,6 +176,17 @@ function computeNetworkDiameter(nodes, links) {
 
 function getNodeLabel(d) {
     return d.id.substring(0, 4) + "..." + d.id.substring(d.id.length - 4) + " (" + d.ipAddress + ")" + " (" + d.location?.country + "/" + d.location?.city + ")";
+}
+
+// Add new function to handle hash changes
+function handleHashChange(nodeById) {
+    const nodeId = window.location.hash.slice(1); // Remove the # from the hash
+    if (nodeId && nodeById.has(nodeId)) {
+        const node = nodeById.get(nodeId);
+        showNodeDetails(node, nodeById);
+    } else {
+        closeNodeDetails();
+    }
 }
 
 if (!streamId) {
@@ -415,5 +433,13 @@ if (!streamId) {
         legend.append("text")
             .attr("dy", "6em")
             .text("Network Diameter: " + networkDiameter);
+
+        // Add hash change listener after nodeById is created
+        window.addEventListener('hashchange', () => handleHashChange(nodeById));
+
+        // Check for initial hash
+        if (window.location.hash) {
+            handleHashChange(nodeById);
+        }
     });
 }
