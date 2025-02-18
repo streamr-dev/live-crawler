@@ -287,7 +287,10 @@ if (!streamId) {
             totalNeighborCount += d.neighbors.length;
         });
         const averageNeighborCount = (totalNeighborCount / totalNodes).toFixed(2);
-        const networkDiameter = computeNetworkDiameter(nodes, links);
+        const stats = computeNetworkStats(nodes, links);
+        const networkDiameter = stats.diameter;
+        const averagePathLength = stats.averagePathLength;
+        const clusteringCoefficient = stats.clusteringCoefficient;
 
         // Set up the SVG canvas dimensions responsively
         const width = window.innerWidth;
@@ -442,6 +445,8 @@ if (!streamId) {
         document.getElementById('total-connections').textContent = totalConnections;
         document.getElementById('mean-degree').textContent = averageNeighborCount;
         document.getElementById('network-diameter').textContent = networkDiameter;
+        document.getElementById('average-path-length').textContent = averagePathLength;
+        document.getElementById('clustering-coefficient').textContent = clusteringCoefficient;
 
         // Add hash change listener after nodeById is created
         window.addEventListener('hashchange', () => handleHashChange(nodeById));
