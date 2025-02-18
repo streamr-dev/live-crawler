@@ -70,7 +70,7 @@ function highlightConnections(startNodeId) {
         queue.push(...nextQueue);
 
         // Schedule the next level highlighting
-        setTimeout(highlightNextLevel, 600);
+        setTimeout(highlightNextLevel, 2000);
     }
 
     highlightNextLevel();
