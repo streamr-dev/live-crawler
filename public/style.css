@@ -17,11 +17,6 @@ svg {
     stroke-opacity: 0.6;
 }
 
-.nodes circle {
-    stroke: #0000ff;
-    stroke-width: 1.5px;
-}
-
 text {
     pointer-events: none;
     font-family: sans-serif;

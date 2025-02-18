@@ -73,8 +73,12 @@ function showNodeDetails(node, nodeById) {
     const content = document.getElementById('node-details-content');
     currentNodeId = node.id; // Store the current node ID
 
-    // Reset all nodes to default style
+    // Reset all nodes and links to default style first
     d3.selectAll("circle.highlight-ring").remove();
+    d3.selectAll(".nodes circle").attr("fill", "blue");
+    d3.selectAll(".links line")
+        .attr("stroke", "#999")
+        .attr("stroke-width", 1);
 
     // Add highlight ring to selected node
     d3.selectAll(".nodes g")
@@ -85,6 +89,22 @@ function showNodeDetails(node, nodeById) {
         .attr("fill", "none")
         .attr("stroke", "blue")
         .attr("stroke-width", 2);
+
+    // Add highlight ring to neighbor nodes
+    d3.selectAll(".nodes g")
+        .filter(d => node.neighbors.includes(d.id))
+        .append("circle")
+        .attr("class", "highlight-ring")
+        .attr("r", 14)
+        .attr("fill", "none")
+        .attr("stroke", "blue")
+        .attr("stroke-width", 2)
+        .attr("stroke-dasharray", "4,4");
+
+    // Highlight links connected to the selected node
+    d3.selectAll(".links line")
+        .filter(d => d.source.id === node.id || d.target.id === node.id)
+        .attr("stroke-width", 3);
 
     // Build details content
     let detailsHTML = `
@@ -111,7 +131,13 @@ function closeNodeDetails() {
     // Remove hash from URL when closing details
     window.history.replaceState(null, '', window.location.pathname + window.location.search);
     document.getElementById('node-details').style.display = 'none';
+
+    // Reset all visual elements to default state
     d3.selectAll("circle.highlight-ring").remove();
+    d3.selectAll(".nodes circle").attr("fill", "blue");
+    d3.selectAll(".links line")
+        .attr("stroke", "#999")
+        .attr("stroke-width", 1);
 }
 
 function visualizePropagation() {
