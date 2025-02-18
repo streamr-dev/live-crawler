@@ -210,6 +210,44 @@ function computeNetworkStats(nodes, links) {
     return { diameter, averagePathLength };
 }
 
+function computeNodeStats(nodes) {
+    const countryStats = new Map();
+    const versionStats = new Map();
+
+    nodes.forEach(node => {
+        // Count countries
+        const country = node.location?.country || 'Unknown';
+        countryStats.set(country, (countryStats.get(country) || 0) + 1);
+
+        // Count application versions
+        const version = node.applicationVersion || 'Unknown';
+        versionStats.set(version, (versionStats.get(version) || 0) + 1);
+    });
+
+    // Convert countries to sorted array and handle top 10 + Others
+    const countrySorted = [...countryStats.entries()]
+        .sort((a, b) => b[1] - a[1]);
+
+    let countryResults;
+    if (countrySorted.length > 10) {
+        const top10 = countrySorted.slice(0, 10);
+        const othersCount = countrySorted.slice(10)
+            .reduce((sum, [_, count]) => sum + count, 0);
+        countryResults = [...top10, ['Others', othersCount]];
+    } else {
+        countryResults = countrySorted;
+    }
+
+    // Sort versions
+    const versionSorted = [...versionStats.entries()]
+        .sort((a, b) => b[1] - a[1]);
+
+    return {
+        countries: countryResults,
+        versions: versionSorted
+    };
+}
+
 function getNodeLabel(d) {
     return d.id.substring(0, 4) + "..." + d.id.substring(d.id.length - 4) + " (" + d.ipAddress + ")" + " (" + d.location?.country + "/" + d.location?.city + ")";
 }
@@ -461,5 +499,20 @@ if (!streamId) {
         if (window.location.hash) {
             handleHashChange(nodeById);
         }
+
+
+        const nodeStats = computeNodeStats(nodes);
+
+        // Update country statistics
+        const countryStatsHtml = nodeStats.countries
+            .map(([country, count]) => `<p>${country}: ${count} (${((count/totalNodes)*100).toFixed(1)}%)</p>`)
+            .join('\n');
+        document.getElementById('country-stats').innerHTML = countryStatsHtml;
+
+        // Update version statistics
+        const versionStatsHtml = nodeStats.versions
+            .map(([version, count]) => `<p>${version}: ${count} (${((count/totalNodes)*100).toFixed(1)}%)</p>`)
+            .join('\n');
+        document.getElementById('version-stats').innerHTML = versionStatsHtml;
     });
 }

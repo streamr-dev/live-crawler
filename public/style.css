@@ -42,6 +42,12 @@ text {
     margin: 5px 0;
 }
 
+.stats-section {
+    margin-top: 15px;
+    border-top: 1px solid #eee;
+    padding-top: 10px;
+}
+
 .loading {
     position: fixed;
     top: 50%;
