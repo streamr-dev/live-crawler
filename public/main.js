@@ -43,22 +43,22 @@ function highlightConnections(startNodeId) {
                     if (linkData.source.id === nodeId && !visited.has(linkData.target.id)) {
                         d3.selectAll("line")
                             .filter(l => l.source.id === linkData.source.id && l.target.id === linkData.target.id)
-                            .attr("stroke", COLORS.LINK_PROPAGATION_HIGHLIGHT)
-                            .attr("stroke-width", 2)
+                            .style("stroke", COLORS.LINK_PROPAGATION_HIGHLIGHT)
+                            .style("stroke-width", 2)
                             .transition()
                             .duration(2000)
-                            .attr("stroke", COLORS.LINK_DEFAULT)
-                            .attr("stroke-width", 1);
+                            .style("stroke", COLORS.LINK_DEFAULT)
+                            .style("stroke-width", 1);
                         nextQueue.push(linkData.target.id);
                     } else if (linkData.target.id === nodeId && !visited.has(linkData.source.id)) {
                         d3.selectAll("line")
                             .filter(l => l.source.id === linkData.source.id && l.target.id === linkData.target.id)
-                            .attr("stroke", COLORS.LINK_PROPAGATION_HIGHLIGHT)
-                            .attr("stroke-width", 2)
+                            .style("stroke", COLORS.LINK_PROPAGATION_HIGHLIGHT)
+                            .style("stroke-width", 2)
                             .transition()
                             .duration(2000)
-                            .attr("stroke", COLORS.LINK_DEFAULT)
-                            .attr("stroke-width", 1);
+                            .style("stroke", COLORS.LINK_DEFAULT)
+                            .style("stroke-width", 1);
                         nextQueue.push(linkData.source.id);
                     }
                 });
