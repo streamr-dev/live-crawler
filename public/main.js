@@ -12,9 +12,8 @@ const urlParams = new URLSearchParams(window.location.search);
 const streamId = urlParams.get('streamId');
 
 let currentNodeId = null;
-let links = []; // Add this to store links globally
+let links = [];
 
-// Move highlightConnections function outside the fetch callback
 function highlightConnections(startNodeId) {
     const visited = new Set();
     const queue = [startNodeId];
@@ -70,7 +69,6 @@ function highlightConnections(startNodeId) {
         setTimeout(highlightNextLevel, 600);
     }
 
-    // Start the highlighting process
     highlightNextLevel();
 }
 
@@ -80,7 +78,7 @@ function showNodeDetails(node, nodeById) {
 
     const detailsDiv = document.getElementById('node-details');
     const content = document.getElementById('node-details-content');
-    currentNodeId = node.id; // Store the current node ID
+    currentNodeId = node.id;
 
     // Reset all nodes and links to default style first
     d3.selectAll("circle.highlight-ring").remove();
@@ -109,7 +107,6 @@ function showNodeDetails(node, nodeById) {
         .filter(d => d.source.id === node.id || d.target.id === node.id)
         .attr("stroke-width", 3);
 
-    // Build details content
     let detailsHTML = `
             <p><strong>Node ID:</strong> ${node.id}</p>
             <p><strong>IP Address:</strong> ${node.ipAddress || 'N/A'}</p>
@@ -152,7 +149,6 @@ function visualizePropagation() {
 function computeNetworkDiameter(nodes, links) {
     const adjacencyList = new Map();
 
-    // Build adjacency list
     nodes.forEach(node => {
         adjacencyList.set(node.id, []);
     });
@@ -207,7 +203,6 @@ function getNodeLabel(d) {
     return d.id.substring(0, 4) + "..." + d.id.substring(d.id.length - 4) + " (" + d.ipAddress + ")" + " (" + d.location?.country + "/" + d.location?.city + ")";
 }
 
-// Add new function to handle hash changes
 function handleHashChange(nodeById) {
     const nodeId = window.location.hash.slice(1); // Remove the # from the hash
     if (nodeId && nodeById.has(nodeId)) {
@@ -383,7 +378,6 @@ if (!streamId) {
             }
         });
 
-        // Function to reset highlighting
         function resetHighlighting() {
             // Reset node colors
             circles.attr("fill", COLORS.NODE_DEFAULT);
@@ -411,7 +405,6 @@ if (!streamId) {
                 });
         });
 
-        // Drag event handlers
         function dragstarted(event, d) {
             if (!event.active) simulation.alphaTarget(0.3).restart();
             d.fx = d.x;
