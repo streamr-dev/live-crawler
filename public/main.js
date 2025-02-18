@@ -237,8 +237,16 @@ if (!streamId) {
         timerElement.textContent = secondsElapsed;
     }, 1000);
 
-    // Fetch topology data from localhost with streamId as a query parameter
-    fetch(`/topology?streamId=${streamId}`).then(function (response) {
+    // Get partition from URL if it exists
+    const partition = urlParams.get('partition');
+
+    // Build the URL with optional partition parameter
+    let topologyUrl = `/topology?streamId=${streamId}`;
+    if (partition !== null) {
+        topologyUrl += `&partition=${partition}`;
+    }
+
+    fetch(topologyUrl).then(function (response) {
         return response.json()
     }).then(function (data) {
         // Remove loading indicator

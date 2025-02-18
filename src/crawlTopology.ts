@@ -20,17 +20,6 @@ const createPeerDescriptorLogOutput = (peerDescriptor: PeerDescriptor) => {
     }
 }
 
-const createNodeInfoLogOutput = (nodeInfo: NormalizedNodeInfo) => {
-    return {
-        peerDescriptor: createPeerDescriptorLogOutput(nodeInfo.peerDescriptor),
-        streamPartitions: nodeInfo.streamPartitions.map((sp: any) => ({
-            id: sp.id,
-            contentDeliveryLayerNeighbors: sp.contentDeliveryLayerNeighbors.map((n: any) => toNodeId(n.peerDescriptor))  // TODO better type
-        })),
-        version: nodeInfo.applicationVersion
-    }
-}
-
 export const crawlTopology = async (
     localNode: NetworkNodeFacade,
     entryPoints: PeerDescriptor[],
@@ -56,17 +45,19 @@ export const crawlTopology = async (
             const info = await localNode.fetchNodeInfo(peerDescriptor)
             nodeInfos.set(nodeId, info)
             visitedNodes.add(nodeId)
-            logger.info(`Queried ${nodeId}`, { info: createNodeInfoLogOutput(info), runId })
+            let newNodesFound = 0
             for (const neighbor of getNeighbors(info)) {
                 const neighborId = toNodeId(neighbor)
                 if (!visitedNodes.has(neighborId)) {
                     queue.push(neighbor)
                     visitedNodes.add(neighborId)
+                    newNodesFound += 1
                 }
             }
+            logger.info(`Queried ${nodeId}`, { runId, newNodesFound })
         } catch (err) {
             errorNodes.add(nodeId)
-            logger.warn(`Query failed ${nodeId}`, { peerDescriptor: createPeerDescriptorLogOutput(peerDescriptor), err, runId })
+            logger.warn(`Query failed ${nodeId}`, { runId, peerDescriptor: createPeerDescriptorLogOutput(peerDescriptor), err })
         }
     }
 

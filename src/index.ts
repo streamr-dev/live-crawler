@@ -26,8 +26,32 @@ app.get('/topology', async (req, res) => {
         res.status(400).send('Bad Request: streamId query parameter is required')
         return
     }
-    const streamId = toStreamID(streamIdParam)
-    const streamPartId = toStreamPartID(streamId, 0)
+    let streamId;
+    try {
+        streamId = toStreamID(streamIdParam)
+    } catch (err) {
+        res.status(400).send('Bad Request: Invalid stream ID format')
+        return
+    }
+
+    let partition;
+    try {
+        partition = req.query.partition !== undefined ? parseInt(req.query.partition as string) : 0
+        if (isNaN(partition)) {
+            throw new Error('Partition must be a number')
+        }
+    } catch (err) {
+        res.status(400).send('Bad Request: Invalid partition parameter')
+        return
+    }
+
+    let streamPartId;
+    try {
+        streamPartId = toStreamPartID(streamId, partition)
+    } catch (err) {
+        res.status(400).send('Bad Request: Could not create stream partition ID')
+        return
+    }
 
     try {
         const localNode = new NetworkNodeFacade((await (streamrClient.getNode()).getNode()) as NetworkNode)
@@ -35,7 +59,7 @@ app.get('/topology', async (req, res) => {
         const topology = await crawlTopology(localNode, entryPoints, (nodeInfo: NormalizedNodeInfo) => {
             const spInfo = nodeInfo.streamPartitions.find(({ id }) => id === streamPartId)
             return spInfo?.contentDeliveryLayerNeighbors.map(({ peerDescriptor }) => peerDescriptor) ?? []
-        }, `stream-${streamId}-${Date.now()}`)
+        }, `${streamPartId}/${Date.now()}`)
 
         const result = topology.getNodes().map((node) => ({
             ...node,
