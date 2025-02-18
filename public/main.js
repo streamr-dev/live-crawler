@@ -279,8 +279,7 @@ if (!streamId) {
         const networkDiameter = computeNetworkDiameter(nodes, links);
 
         // Set up the SVG canvas dimensions responsively
-        const margin = { right: 200 }; // Space for legend
-        const width = window.innerWidth - margin.right;
+        const width = window.innerWidth;
         const height = window.innerHeight;
 
         // Define zoom behavior
@@ -291,24 +290,21 @@ if (!streamId) {
         // Create the SVG and apply zoom behavior
         const svg = d3.select("body")
             .append("svg")
-            .attr("width", width + margin.right)
+            .attr("width", width)
             .attr("height", height)
             .call(zoom);
 
         // Update SVG size on window resize
         window.addEventListener('resize', function() {
-            const newWidth = window.innerWidth - margin.right;
+            const newWidth = window.innerWidth;
             const newHeight = window.innerHeight;
 
             svg
-                .attr("width", newWidth + margin.right)
+                .attr("width", newWidth)
                 .attr("height", newHeight);
 
             // Update force center
             simulation.force("center", d3.forceCenter(newWidth / 2, newHeight / 2));
-
-            // Update legend position
-            legend.attr("transform", `translate(${newWidth + 20}, 50)`);
 
             simulation.alpha(0.3).restart();
         });
@@ -430,31 +426,11 @@ if (!streamId) {
             container.attr("transform", event.transform);
         }
 
-        // Add legend to the right side
-        const legend = svg.append("g")
-            .attr("class", "legend")
-            .attr("transform", `translate(${width + 20}, 50)`);
-
-        legend.append("text")
-            .text("Network Statistics")
-            .attr("font-size", "16px")
-            .attr("font-weight", "bold");
-
-        legend.append("text")
-            .attr("dy", "1.5em")
-            .text("Total Nodes: " + totalNodes);
-
-        legend.append("text")
-            .attr("dy", "3em")
-            .text("Total Connections: " + totalConnections);
-
-        legend.append("text")
-            .attr("dy", "4.5em")
-            .text("Mean node degree: " + averageNeighborCount);
-
-        legend.append("text")
-            .attr("dy", "6em")
-            .text("Network Diameter: " + networkDiameter);
+        // Update the HTML legend with statistics
+        document.getElementById('total-nodes').textContent = totalNodes;
+        document.getElementById('total-connections').textContent = totalConnections;
+        document.getElementById('mean-degree').textContent = averageNeighborCount;
+        document.getElementById('network-diameter').textContent = networkDiameter;
 
         // Add hash change listener after nodeById is created
         window.addEventListener('hashchange', () => handleHashChange(nodeById));
