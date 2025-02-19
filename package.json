@@ -12,6 +12,7 @@
   "description": "",
   "dependencies": {
     "@streamr/dht": "102.0.0",
+    "@streamr/geoip-location": "^102.0.0",
     "@streamr/sdk": "102.0.0",
     "@streamr/trackerless-network": "102.0.0",
     "@streamr/utils": "102.0.0",
