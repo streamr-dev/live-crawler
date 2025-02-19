@@ -1,10 +1,10 @@
 const COLORS = {
-    NODE_DEFAULT: 'blue',
     HIGHLIGHT_RING: 'blue',
     NODE_INACTIVE: '#999',
     LINK_DEFAULT: '#999',
     NODE_PROPAGATION_HIGHLIGHT: 'red',
-    LINK_PROPAGATION_HIGHLIGHT: 'red'
+    LINK_PROPAGATION_HIGHLIGHT: 'red',
+    UNKNOWN_REGION_COLOR: '#999'
 };
 
 // Extract streamId from the URL query parameters
@@ -90,7 +90,6 @@ function showNodeDetails(node, nodeById) {
 
     // Reset all nodes and links to default style first
     d3.selectAll("circle.highlight-ring").remove();
-    d3.selectAll(".nodes circle").attr("fill", COLORS.NODE_DEFAULT);
     d3.selectAll(".links line")
         .attr("stroke", COLORS.LINK_DEFAULT)
         .attr("stroke-width", 1);
@@ -142,7 +141,6 @@ function closeNodeDetails() {
 
     // Reset all visual elements to default state
     d3.selectAll("circle.highlight-ring").remove();
-    d3.selectAll(".nodes circle").attr("fill", COLORS.NODE_DEFAULT);
     d3.selectAll(".links line")
         .attr("stroke", COLORS.LINK_DEFAULT)
         .attr("stroke-width", 1);
@@ -271,6 +269,16 @@ function handleHashChange(nodeById) {
     } else {
         closeNodeDetails();
     }
+}
+
+function getColorScale(nodes) {
+    // Get unique regions
+    const regions = new Set(nodes.map(n => n.location?.subRegion).filter(Boolean));
+
+    // Create a color scale with different hues
+    return d3.scaleOrdinal()
+        .domain([...regions])
+        .range(d3.schemeTableau10); // Using D3's Tableau10 color scheme
 }
 
 if (!streamId) {
@@ -406,10 +414,14 @@ if (!streamId) {
             .data(nodes)
             .enter().append("g");
 
+        const colorScale = getColorScale(nodes);
+
         const circles = node.append("circle")
             .attr("r", 10)
-            .attr("fill", COLORS.NODE_DEFAULT)
-            .on("click", function (event, d) {
+            .attr("fill", function(d) {
+                return d.location?.subRegion ? colorScale(d.location.subRegion) : COLORS.UNKNOWN_REGION_COLOR;
+            })
+            .on("click", function(event, d) {
                 event.stopPropagation();
                 showNodeDetails(d, nodeById);
             });
@@ -448,8 +460,8 @@ if (!streamId) {
         });
 
         function resetHighlighting() {
-            // Reset node colors
-            circles.attr("fill", COLORS.NODE_DEFAULT);
+            // Reset node colors to their region colors
+            circles.attr("fill", d => d.location?.subRegion ? colorScale(d.location.subRegion) : COLORS.UNKNOWN_REGION_COLOR);
             highlightedNodes.clear();
 
             // Reset link styles
@@ -514,12 +526,17 @@ if (!streamId) {
             handleHashChange(nodeById);
         }
 
-
         const nodeStats = computeNodeStats(nodes);
 
         // Update subRegion statistics
         const subRegionStatsHtml = nodeStats.subRegions
-            .map(([subRegion, count]) => `<p>${subRegion}: ${count} (${((count/totalNodes)*100).toFixed(1)}%)</p>`)
+            .map(([subRegion, count]) => {
+                const color = subRegion === 'Unknown' ? COLORS.UNKNOWN_REGION_COLOR : colorScale(subRegion);
+                return `<p>
+                    <span class="color-dot" style="background-color: ${color}"></span>
+                    ${subRegion}: ${count} (${((count/totalNodes)*100).toFixed(1)}%)
+                </p>`;
+            })
             .join('\n');
         document.getElementById('region-stats').innerHTML = subRegionStatsHtml;
 
