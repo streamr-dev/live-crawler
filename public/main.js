@@ -215,39 +215,29 @@ function computeNetworkStats(nodes, links) {
 }
 
 function computeNodeStats(nodes) {
-    const countryStats = new Map();
+    const subRegionStats = new Map();
     const versionStats = new Map();
 
     nodes.forEach(node => {
-        // Count countries
-        const country = node.location?.country || 'Unknown';
-        countryStats.set(country, (countryStats.get(country) || 0) + 1);
+        // Count subRegions
+        const subRegion = node.location?.subRegion || 'Unknown';
+        subRegionStats.set(subRegion, (subRegionStats.get(subRegion) || 0) + 1);
 
         // Count application versions
         const version = node.applicationVersion || 'Unknown';
         versionStats.set(version, (versionStats.get(version) || 0) + 1);
     });
 
-    // Convert countries to sorted array and handle top 10 + Others
-    const countrySorted = [...countryStats.entries()]
+    // Convert subRegions to sorted array - show all regions without "Others" grouping
+    const subRegionResults = [...subRegionStats.entries()]
         .sort((a, b) => b[1] - a[1]);
-
-    let countryResults;
-    if (countrySorted.length > 10) {
-        const top10 = countrySorted.slice(0, 10);
-        const othersCount = countrySorted.slice(10)
-            .reduce((sum, [_, count]) => sum + count, 0);
-        countryResults = [...top10, ['Others', othersCount]];
-    } else {
-        countryResults = countrySorted;
-    }
 
     // Sort versions
     const versionSorted = [...versionStats.entries()]
         .sort((a, b) => b[1] - a[1]);
 
     return {
-        countries: countryResults,
+        subRegions: subRegionResults,
         versions: versionSorted
     };
 }
@@ -510,11 +500,11 @@ if (!streamId) {
 
         const nodeStats = computeNodeStats(nodes);
 
-        // Update country statistics
-        const countryStatsHtml = nodeStats.countries
-            .map(([country, count]) => `<p>${country}: ${count} (${((count/totalNodes)*100).toFixed(1)}%)</p>`)
+        // Update subRegion statistics
+        const subRegionStatsHtml = nodeStats.subRegions
+            .map(([subRegion, count]) => `<p>${subRegion}: ${count} (${((count/totalNodes)*100).toFixed(1)}%)</p>`)
             .join('\n');
-        document.getElementById('country-stats').innerHTML = countryStatsHtml;
+        document.getElementById('region-stats').innerHTML = subRegionStatsHtml;
 
         // Update version statistics
         const versionStatsHtml = nodeStats.versions
