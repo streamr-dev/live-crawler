@@ -13,6 +13,7 @@ const streamId = urlParams.get('streamId');
 
 let currentNodeId = null;
 let links = [];
+let colorScale;
 
 function toggleSection(section) {
     section.classList.toggle('collapsed');
@@ -27,11 +28,7 @@ function showNodeDetails(node, nodeById) {
     const content = document.getElementById('node-details-content');
     currentNodeId = node.id;
 
-    // Reset all nodes and links to default style first
-    d3.selectAll("circle.highlight-ring").remove();
-    d3.selectAll(".links line")
-        .attr("stroke", COLORS.LINK_DEFAULT)
-        .attr("stroke-width", 1);
+    resetHighlighting();
 
     // Add highlight ring to selected node
     d3.selectAll(".nodes g")
@@ -74,15 +71,11 @@ function showNodeDetails(node, nodeById) {
 }
 
 function closeNodeDetails() {
+    resetHighlighting();
+
     // Remove hash from URL when closing details
     window.history.replaceState(null, '', window.location.pathname + window.location.search);
     document.getElementById('node-details').style.display = 'none';
-
-    // Reset all visual elements to default state
-    d3.selectAll("circle.highlight-ring").remove();
-    d3.selectAll(".links line")
-        .attr("stroke", COLORS.LINK_DEFAULT)
-        .attr("stroke-width", 1);
 }
 
 function visualizePropagation() {
@@ -269,14 +262,18 @@ function handleHashChange(nodeById) {
     }
 }
 
-function getColorScale(nodes) {
-    // Get unique regions
-    const regions = new Set(nodes.map(n => n.location?.subRegion).filter(Boolean));
+function resetHighlighting() {
+    // Reset node colors to their region colors
+    d3.selectAll("circle")
+        .attr("fill", d => d.location?.subRegion ? colorScale(d.location.subRegion) : COLORS.UNKNOWN_REGION_COLOR);
 
-    // Create a color scale with different hues
-    return d3.scaleOrdinal()
-        .domain([...regions])
-        .range(d3.schemeTableau10); // Using D3's Tableau10 color scheme
+    // Reset link styles
+    d3.selectAll(".links line")
+        .attr("stroke", COLORS.LINK_DEFAULT)
+        .attr("stroke-width", 1);
+
+    // Remove highlight rings
+    d3.selectAll("circle.highlight-ring").remove();
 }
 
 if (!streamId) {
@@ -412,7 +409,11 @@ if (!streamId) {
             .data(nodes)
             .enter().append("g");
 
-        const colorScale = getColorScale(nodes);
+        // Create a color scale with different hues for regions
+        const regions = new Set(nodes.map(n => n.location?.subRegion).filter(Boolean));
+        colorScale = d3.scaleOrdinal()
+            .domain([...regions])
+            .range(d3.schemeTableau10);
 
         const circles = node.append("circle")
             .attr("r", 10)
@@ -442,21 +443,9 @@ if (!streamId) {
         // Add click event to the SVG background to reset highlighting
         svg.on("click", function (event) {
             if (event.target === svg.node()) {
-                resetHighlighting();
                 closeNodeDetails();
             }
         });
-
-        function resetHighlighting() {
-            // Reset node colors to their region colors
-            circles.attr("fill", d => d.location?.subRegion ? colorScale(d.location.subRegion) : COLORS.UNKNOWN_REGION_COLOR);
-
-            // Reset link styles
-            link.attr("stroke", COLORS.LINK_DEFAULT).attr("stroke-width", 1);
-
-            // Remove highlight rings
-            d3.selectAll("circle.highlight-ring").remove();
-        }
 
         // Update positions on each tick of the simulation
         simulation.on("tick", () => {
