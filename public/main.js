@@ -18,69 +18,8 @@ function toggleSection(section) {
     section.classList.toggle('collapsed');
 }
 
-function highlightConnections(startNodeId) {
-    const visited = new Set();
-    const queue = [startNodeId];
-
-    function highlightNextLevel() {
-        if (queue.length === 0) return;
-
-        const nextQueue = [];
-        queue.forEach(nodeId => {
-            if (!visited.has(nodeId)) {
-                visited.add(nodeId);
-
-                // Highlight the node
-                d3.selectAll("circle")
-                    .filter(n => n.id === nodeId)
-                    .each(function() {
-                        const originalColor = d3.select(this).attr("fill");
-                        d3.select(this)
-                            .attr("fill", COLORS.NODE_PROPAGATION_HIGHLIGHT)
-                            .transition()
-                            .duration(2000)
-                            .attr("fill", originalColor);
-                    });
-
-                // Highlight links and gather next level nodes
-                links.forEach(linkData => {
-                    if (linkData.source.id === nodeId && !visited.has(linkData.target.id)) {
-                        d3.selectAll("line")
-                            .filter(l => l.source.id === linkData.source.id && l.target.id === linkData.target.id)
-                            .style("stroke", COLORS.LINK_PROPAGATION_HIGHLIGHT)
-                            .style("stroke-width", 2)
-                            .transition()
-                            .duration(2000)
-                            .style("stroke", COLORS.LINK_DEFAULT)
-                            .style("stroke-width", 1);
-                        nextQueue.push(linkData.target.id);
-                    } else if (linkData.target.id === nodeId && !visited.has(linkData.source.id)) {
-                        d3.selectAll("line")
-                            .filter(l => l.source.id === linkData.source.id && l.target.id === linkData.target.id)
-                            .style("stroke", COLORS.LINK_PROPAGATION_HIGHLIGHT)
-                            .style("stroke-width", 2)
-                            .transition()
-                            .duration(2000)
-                            .style("stroke", COLORS.LINK_DEFAULT)
-                            .style("stroke-width", 1);
-                        nextQueue.push(linkData.source.id);
-                    }
-                });
-            }
-        });
-
-        // Move to the next level
-        queue.length = 0;
-        queue.push(...nextQueue);
-
-        // Schedule the next level highlighting
-        setTimeout(highlightNextLevel, 2000);
-    }
-
-    highlightNextLevel();
-}
-
 function showNodeDetails(node, nodeById) {
+
     // Update URL hash without triggering a page reload
     window.history.replaceState(null, '', `#${node.id}`);
 
@@ -147,9 +86,68 @@ function closeNodeDetails() {
 }
 
 function visualizePropagation() {
-    if (currentNodeId) {
-        highlightConnections(currentNodeId);
+    if (!currentNodeId) {
+        return;
     }
+    const visited = new Set();
+    const queue = [currentNodeId];
+
+    function highlightNextLevel() {
+        if (queue.length === 0) return;
+
+        const nextQueue = [];
+        queue.forEach(nodeId => {
+            if (!visited.has(nodeId)) {
+                visited.add(nodeId);
+
+                // Highlight the node
+                d3.selectAll("circle")
+                    .filter(n => n.id === nodeId)
+                    .each(function() {
+                        const originalColor = d3.select(this).attr("fill");
+                        d3.select(this)
+                            .attr("fill", COLORS.NODE_PROPAGATION_HIGHLIGHT)
+                            .transition()
+                            .duration(2000)
+                            .attr("fill", originalColor);
+                    });
+
+                // Highlight links and gather next level nodes
+                links.forEach(linkData => {
+                    if (linkData.source.id === nodeId && !visited.has(linkData.target.id)) {
+                        d3.selectAll("line")
+                            .filter(l => l.source.id === linkData.source.id && l.target.id === linkData.target.id)
+                            .style("stroke", COLORS.LINK_PROPAGATION_HIGHLIGHT)
+                            .style("stroke-width", 2)
+                            .transition()
+                            .duration(2000)
+                            .style("stroke", COLORS.LINK_DEFAULT)
+                            .style("stroke-width", 1);
+                        nextQueue.push(linkData.target.id);
+                    } else if (linkData.target.id === nodeId && !visited.has(linkData.source.id)) {
+                        d3.selectAll("line")
+                            .filter(l => l.source.id === linkData.source.id && l.target.id === linkData.target.id)
+                            .style("stroke", COLORS.LINK_PROPAGATION_HIGHLIGHT)
+                            .style("stroke-width", 2)
+                            .transition()
+                            .duration(2000)
+                            .style("stroke", COLORS.LINK_DEFAULT)
+                            .style("stroke-width", 1);
+                        nextQueue.push(linkData.source.id);
+                    }
+                });
+            }
+        });
+
+        // Move to the next level
+        queue.length = 0;
+        queue.push(...nextQueue);
+
+        // Schedule the next level highlighting
+        setTimeout(highlightNextLevel, 2000);
+    }
+
+    highlightNextLevel();
 }
 
 function computeNetworkStats(nodes, links) {
@@ -447,10 +445,6 @@ if (!streamId) {
             .on("drag", dragged)
             .on("end", dragended));
 
-        // Variables to keep track of highlighted nodes and links
-        let highlightedNodes = new Set();
-        let highlightedLinks = new Set();
-
         // Add click event to the SVG background to reset highlighting
         svg.on("click", function (event) {
             if (event.target === svg.node()) {
@@ -462,11 +456,9 @@ if (!streamId) {
         function resetHighlighting() {
             // Reset node colors to their region colors
             circles.attr("fill", d => d.location?.subRegion ? colorScale(d.location.subRegion) : COLORS.UNKNOWN_REGION_COLOR);
-            highlightedNodes.clear();
 
             // Reset link styles
             link.attr("stroke", COLORS.LINK_DEFAULT).attr("stroke-width", 1);
-            highlightedLinks.clear();
 
             // Remove highlight rings
             d3.selectAll("circle.highlight-ring").remove();
