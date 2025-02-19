@@ -433,12 +433,6 @@ if (!streamId) {
             .attr("font-size", "10px")
             .attr("text-anchor", "middle");
 
-        // Add tooltips to display full node ID and IP address
-        node.append("title")
-            .text(function (d) {
-                return "Node ID: " + d.id + "\nIP Address: " + (d.ipAddress ? d.ipAddress : "N/A");
-            });
-
         // Enable dragging of nodes
         node.call(d3.drag()
             .on("start", dragstarted)
