@@ -6,6 +6,7 @@ import { CityResponse } from "mmdb-lib/lib/reader/response"
 interface LocationData {
     city?: string
     country?: string
+    countryCode?: string
     loc?: string
     hostname?: string
     org?: string
@@ -37,6 +38,7 @@ export async function fetchLocationData(ipAddress: string): Promise<LocationData
         return {
             city: location.city?.names?.en,
             country: location?.country?.names?.en,
+            countryCode: location?.country?.iso_code,
             loc: location.location?.latitude + ',' + location.location?.longitude,
             hostname: location.traits?.domain,
             org: location.traits?.organization ?? location.traits?.isp,
