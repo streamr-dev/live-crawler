@@ -118,7 +118,7 @@ function showNodeDetails(node, nodeById) {
     let detailsHTML = `
             <p><strong>Node ID:</strong> ${node.id}</p>
             <p><strong>IP Address:</strong> ${node.ipAddress || 'N/A'}</p>
-            <p><strong>Location:</strong> ${(node?.location?.country || 'N/A') + '/' + (node?.location?.city || 'N/A')}</p>
+            <p><strong>Location:</strong> ${node?.location?.country || 'N/A'}${node?.location?.city ? ' / ' + node.location.city : ''}</p>
             <p><strong>Region:</strong> ${node.region || 'N/A'}</p>
             <p><strong>Application version:</strong> ${node.applicationVersion}</p>
             <p><strong>Websocket URL:</strong> ${node.websocketUrl || 'N/A'}</p>
@@ -243,7 +243,24 @@ function computeNodeStats(nodes) {
 }
 
 function getNodeLabel(d) {
-    return d.id.substring(0, 4) + "..." + d.id.substring(d.id.length - 4) + " (" + d.ipAddress + ")" + " (" + d.location?.country + "/" + d.location?.city + ")";
+    const idPart = d.id.substring(0, 4) + "..." + d.id.substring(d.id.length - 4);
+    const ipPart = d.ipAddress ? ` (${d.ipAddress})` : '';
+
+    let locationPart = '';
+    if (d.location) {
+        const locationBits = [];
+        if (d.location.countryCode) {
+            locationBits.push(d.location.countryCode);
+        }
+        if (d.location.city) {
+            locationBits.push(d.location.city);
+        }
+        if (locationBits.length > 0) {
+            locationPart = ` (${locationBits.join('/')})`;
+        }
+    }
+
+    return idPart + ipPart + locationPart;
 }
 
 function handleHashChange(nodeById) {
