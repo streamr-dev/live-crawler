@@ -32,7 +32,7 @@ export async function fetchLocationData(ipAddress: string): Promise<LocationData
     try {
         // @ts-expect-error accesing priavte property
         const location: CityResponse = locator.reader.get(ipAddress)
-        if (location === undefined) {
+        if (location === undefined || location === null) {
             return {}
         }
         return {
