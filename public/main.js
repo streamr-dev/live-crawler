@@ -325,6 +325,7 @@ function computeAssortativityByRegion(nodes, links) {
     return (sameRegionLinks / totalLinks).toFixed(2);
 }
 
+// Degree-preserving assortativity by region maximization
 function buildAssortativityByRegionMaximizedLinks(nodes, originalLinks) {
     const regionGroups = new Map();
     const nodeDegrees = new Map();
@@ -408,6 +409,85 @@ function buildAssortativityByRegionMaximizedLinks(nodes, originalLinks) {
     });
 
     return newLinks;
+}
+
+// Degree-preserving randomization of links
+function buildRandomizedLinks(nodes, originalLinks) {
+    const nodeDegrees = new Map();
+    const adjacencyList = new Map();
+
+    // Initialize node degrees and adjacency list
+    nodes.forEach(node => {
+        nodeDegrees.set(node.id, 0);
+        adjacencyList.set(node.id, new Set());
+    });
+
+    // Calculate original degree for each node
+    originalLinks.forEach(link => {
+        nodeDegrees.set(link.source, nodeDegrees.get(link.source) + 1);
+        nodeDegrees.set(link.target, nodeDegrees.get(link.target) + 1);
+    });
+
+    // Function to add a link
+    function addLink(source, target) {
+        adjacencyList.get(source).add(target);
+        adjacencyList.get(target).add(source);
+    }
+
+    // Create a pool of all "stubs" (half-edges) that need to be connected
+    let stubs = [];
+    nodeDegrees.forEach((degree, nodeId) => {
+        for (let i = 0; i < degree; i++) {
+            stubs.push(nodeId);
+        }
+    });
+
+    // Randomly shuffle the stubs
+    for (let i = stubs.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [stubs[i], stubs[j]] = [stubs[j], stubs[i]];
+    }
+
+    // Connect pairs of stubs randomly
+    const newLinks = [];
+    while (stubs.length >= 2) {
+        const source = stubs.pop();
+        let targetIndex = -1;
+
+        // Find a valid target (not self-loop or duplicate)
+        for (let i = stubs.length - 1; i >= 0; i--) {
+            const potentialTarget = stubs[i];
+            if (source !== potentialTarget &&
+                !adjacencyList.get(source).has(potentialTarget)) {
+                targetIndex = i;
+                break;
+            }
+        }
+
+        if (targetIndex >= 0) {
+            const target = stubs.splice(targetIndex, 1)[0];
+            addLink(source, target);
+            if (source < target) {
+                newLinks.push({ source, target });
+            } else {
+                newLinks.push({ source: target, target: source });
+            }
+        }
+    }
+
+    return newLinks;
+}
+
+function computeMeanRandomAssortativity(nodes, originalLinks, iterations = 10) {
+    let totalAssortativity = 0;
+
+    for (let i = 0; i < iterations; i++) {
+        const randomLinks = buildRandomizedLinks(nodes, originalLinks);
+        const assortativity = parseFloat(computeAssortativityByRegion(nodes, randomLinks));
+        totalAssortativity += assortativity;
+    }
+
+    return (totalAssortativity / iterations).toFixed(2);
 }
 
 if (!streamId) {
@@ -497,6 +577,9 @@ if (!streamId) {
         // Compute theoretical maximum assortativity by region
         const optimalLinks = buildAssortativityByRegionMaximizedLinks(nodes, links);
         const maxAssortativity = computeAssortativityByRegion(nodes, optimalLinks);
+
+        // Compute random assortativity
+        const randomAssortativity = computeMeanRandomAssortativity(nodes, links);
 
         // Set up the SVG canvas dimensions responsively
         const width = window.innerWidth;
@@ -632,6 +715,7 @@ if (!streamId) {
         document.getElementById('average-path-length').textContent = averagePathLength;
         document.getElementById('assortativity-by-region').textContent = assortativityByRegion;
         document.getElementById('max-assortativity').textContent = maxAssortativity;
+        document.getElementById('random-assortativity').textContent = randomAssortativity;
 
         // Add hash change listener after nodeById is created
         window.addEventListener('hashchange', () => handleHashChange(nodeById));
