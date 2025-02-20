@@ -292,7 +292,7 @@ function computeAssortativityByRegion(nodes, links) {
     return (sameRegionLinks / totalLinks).toFixed(2);
 }
 
-function buildOptimalLinks(nodes, originalLinks) {
+function buildAssortativityByRegionMaximizedLinks(nodes, originalLinks) {
     const regionGroups = new Map();
     const nodeDegrees = new Map();
     const adjacencyList = new Map();
@@ -461,9 +461,9 @@ if (!streamId) {
         // Calculate assortativity by sub-region
         const assortativityByRegion = computeAssortativityByRegion(nodes, links);
 
-        // Compute assortativity by optimal links
-        const optimalLinks = buildOptimalLinks(nodes, links);
-        const assortativityByOptimalLinks = computeAssortativityByRegion(nodes, optimalLinks);
+        // Compute theoretical maximum assortativity by region
+        const optimalLinks = buildAssortativityByRegionMaximizedLinks(nodes, links);
+        const maxAssortativity = computeAssortativityByRegion(nodes, optimalLinks);
 
         // Set up the SVG canvas dimensions responsively
         const width = window.innerWidth;
@@ -604,7 +604,7 @@ if (!streamId) {
         document.getElementById('network-diameter').textContent = networkDiameter;
         document.getElementById('average-path-length').textContent = averagePathLength;
         document.getElementById('assortativity-by-region').textContent = assortativityByRegion;
-        document.getElementById('assortativity-by-optimal-links').textContent = assortativityByOptimalLinks;
+        document.getElementById('max-assortativity').textContent = maxAssortativity;
 
         // Add hash change listener after nodeById is created
         window.addEventListener('hashchange', () => handleHashChange(nodeById));
