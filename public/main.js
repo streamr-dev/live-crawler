@@ -3,8 +3,39 @@ const COLORS = {
     NODE_INACTIVE: '#999',
     LINK_DEFAULT: '#999',
     NODE_PROPAGATION_HIGHLIGHT: 'red',
-    LINK_PROPAGATION_HIGHLIGHT: 'red',
-    UNKNOWN_REGION_COLOR: '#999'
+    LINK_PROPAGATION_HIGHLIGHT: 'red'
+};
+
+const regionColorMap = {
+    // Europe (Blues)
+    'Northern Europe': '#1a4b82',
+    'Western Europe': '#2c7bb6',
+    'Eastern Europe': '#2171b5',
+    'Southern Europe': '#6baed6',
+
+    // Asia (Greens)
+    'Eastern Asia': '#1a9850',
+    'Central Asia': '#66bd63',
+    'Western Asia': '#a6d96a',
+    'Southern Asia': '#d9ef8b',
+    'South-eastern Asia': '#91cf60',
+
+    // Americas (Purples)
+    'Northern America': '#762a83',
+    'Latin America and the Caribbean': '#9970ab',
+
+    // Africa (Oranges/Reds)
+    'Northern Africa': '#d73027',
+    'Sub-Saharan Africa': '#fc8d59',
+
+    // Oceania (Teals)
+    'Australia and New Zealand': '#018571',
+    'Melanesia': '#80cdc1',
+    'Micronesia': '#35978f',
+    'Polynesia': '#c7eae5',
+
+    // Unknown regions
+    'Unknown': '#999999'
 };
 
 // Extract streamId from the URL query parameters
@@ -13,7 +44,9 @@ const streamId = urlParams.get('streamId');
 
 let currentNodeId = null;
 let links = [];
-let colorScale;
+let colorScale = d3.scaleOrdinal()
+    .domain(Object.keys(regionColorMap))
+    .range(Object.values(regionColorMap));
 
 function toggleSection(section) {
     section.classList.toggle('collapsed');
@@ -265,7 +298,7 @@ function handleHashChange(nodeById) {
 function resetHighlighting() {
     // Reset node colors to their region colors
     d3.selectAll("circle")
-        .attr("fill", d => d.location?.subRegion ? colorScale(d.location.subRegion) : COLORS.UNKNOWN_REGION_COLOR);
+        .attr("fill", d => d.location?.subRegion ? colorScale(d.location.subRegion) : regionColorMap['Unknown']);
 
     // Reset link styles
     d3.selectAll(".links line")
@@ -520,16 +553,10 @@ if (!streamId) {
             .data(nodes)
             .enter().append("g");
 
-        // Create a color scale with different hues for regions
-        const regions = new Set(nodes.map(n => n.location?.subRegion).filter(Boolean));
-        colorScale = d3.scaleOrdinal()
-            .domain([...regions])
-            .range(d3.schemeTableau10);
-
         const circles = node.append("circle")
             .attr("r", 10)
             .attr("fill", function(d) {
-                return d.location?.subRegion ? colorScale(d.location.subRegion) : COLORS.UNKNOWN_REGION_COLOR;
+                return d.location?.subRegion ? colorScale(d.location.subRegion) : regionColorMap['Unknown'];
             })
             .on("click", function(event, d) {
                 event.stopPropagation();
@@ -619,7 +646,7 @@ if (!streamId) {
         // Update subRegion statistics
         const subRegionStatsHtml = nodeStats.subRegions
             .map(([subRegion, count]) => {
-                const color = subRegion === 'Unknown' ? COLORS.UNKNOWN_REGION_COLOR : colorScale(subRegion);
+                const color = subRegion === 'Unknown' ? regionColorMap['Unknown'] : colorScale(subRegion);
                 return `<p>
                     <span class="color-dot" style="background-color: ${color}"></span>
                     ${subRegion}: ${count} (${((count/totalNodes)*100).toFixed(1)}%)
