@@ -276,6 +276,107 @@ function resetHighlighting() {
     d3.selectAll("circle.highlight-ring").remove();
 }
 
+function computeAssortativityByRegion(nodes, links) {
+    let sameRegionLinks = 0;
+    let totalLinks = links.length;
+
+    links.forEach(link => {
+        const sourceNode = nodes.find(node => node.id === link.source);
+        const targetNode = nodes.find(node => node.id === link.target);
+
+        if (sourceNode && targetNode && sourceNode.location?.subRegion === targetNode.location?.subRegion) {
+            sameRegionLinks++;
+        }
+    });
+
+    return (sameRegionLinks / totalLinks).toFixed(2);
+}
+
+function buildOptimalLinks(nodes, originalLinks) {
+    const regionGroups = new Map();
+    const nodeDegrees = new Map();
+    const adjacencyList = new Map();
+
+    // Initialize node degrees and adjacency list
+    nodes.forEach(node => {
+        nodeDegrees.set(node.id, 0);
+        adjacencyList.set(node.id, new Set());
+        const region = node.location.subRegion || 'Unknown';
+        if (!regionGroups.has(region)) {
+            regionGroups.set(region, []);
+        }
+        regionGroups.get(region).push(node);
+    });
+
+    // Calculate original degree for each node
+    originalLinks.forEach(link => {
+        nodeDegrees.set(link.source, nodeDegrees.get(link.source) + 1);
+        nodeDegrees.set(link.target, nodeDegrees.get(link.target) + 1);
+    });
+
+    // Function to add a link
+    function addLink(source, target) {
+        adjacencyList.get(source).add(target);
+        adjacencyList.get(target).add(source);
+        nodeDegrees.set(source, nodeDegrees.get(source) - 1);
+        nodeDegrees.set(target, nodeDegrees.get(target) - 1);
+    }
+
+    // Connect regions by creating a path
+    const regions = Array.from(regionGroups.keys());
+    for (let i = 0; i < regions.length - 1; i++) { // Skip the last iteration
+        const currentRegion = regions[i];
+        const nextRegion = regions[i + 1];
+        const currentNodes = regionGroups.get(currentRegion);
+        const nextNodes = regionGroups.get(nextRegion);
+
+        // Find representative nodes with available degree
+        const currentRep = currentNodes.find(node => nodeDegrees.get(node.id) > 0);
+        const nextRep = nextNodes.find(node => nodeDegrees.get(node.id) > 0);
+
+        if (currentRep && nextRep) {
+            addLink(currentRep.id, nextRep.id);
+        }
+    }
+
+    // Maximize intra-region links
+    regionGroups.forEach(nodesInRegion => {
+        for (let i = 0; i < nodesInRegion.length; i++) {
+            for (let j = i + 1; j < nodesInRegion.length; j++) {
+                const nodeA = nodesInRegion[i];
+                const nodeB = nodesInRegion[j];
+                if (nodeDegrees.get(nodeA.id) > 0 && nodeDegrees.get(nodeB.id) > 0) {
+                    addLink(nodeA.id, nodeB.id);
+                }
+            }
+        }
+    });
+
+    // Connect leftover nodes between regions
+    const leftoverNodes = nodes.filter(node => nodeDegrees.get(node.id) > 0);
+    for (let i = 0; i < leftoverNodes.length; i++) {
+        for (let j = i + 1; j < leftoverNodes.length; j++) {
+            const nodeA = leftoverNodes[i];
+            const nodeB = leftoverNodes[j];
+            if (nodeDegrees.get(nodeA.id) > 0 && nodeDegrees.get(nodeB.id) > 0) {
+                addLink(nodeA.id, nodeB.id);
+            }
+        }
+    }
+
+    // Convert adjacency list back to links
+    const newLinks = [];
+    adjacencyList.forEach((neighbors, nodeId) => {
+        neighbors.forEach(neighborId => {
+            if (nodeId < neighborId) { // Avoid duplicate edges
+                newLinks.push({ source: nodeId, target: neighborId });
+            }
+        });
+    });
+
+    return newLinks;
+}
+
 if (!streamId) {
     // Show instructions if no streamId is provided
     document.getElementById('loading').style.display = 'none';
@@ -342,6 +443,9 @@ if (!streamId) {
             });
         });
 
+        // Uncomment below to visualize optimal links
+        //links = buildOptimalLinks(nodes, links);
+
         // Calculate statistics for the legend
         const totalNodes = nodes.length;
         const totalConnections = links.length;
@@ -353,6 +457,13 @@ if (!streamId) {
         const stats = computeNetworkStats(nodes, links);
         const networkDiameter = stats.diameter;
         const averagePathLength = stats.averagePathLength;
+
+        // Calculate assortativity by sub-region
+        const assortativityByRegion = computeAssortativityByRegion(nodes, links);
+
+        // Compute assortativity by optimal links
+        const optimalLinks = buildOptimalLinks(nodes, links);
+        const assortativityByOptimalLinks = computeAssortativityByRegion(nodes, optimalLinks);
 
         // Set up the SVG canvas dimensions responsively
         const width = window.innerWidth;
@@ -492,6 +603,8 @@ if (!streamId) {
         document.getElementById('mean-degree').textContent = averageNeighborCount;
         document.getElementById('network-diameter').textContent = networkDiameter;
         document.getElementById('average-path-length').textContent = averagePathLength;
+        document.getElementById('assortativity-by-region').textContent = assortativityByRegion;
+        document.getElementById('assortativity-by-optimal-links').textContent = assortativityByOptimalLinks;
 
         // Add hash change listener after nodeById is created
         window.addEventListener('hashchange', () => handleHashChange(nodeById));
