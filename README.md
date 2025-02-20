@@ -17,9 +17,11 @@ npm run build
 npm run start
 ```
 
-### Attributions
+Navigate to http://localhost:3000
 
-File iso-3166-data.json is from https://github.com/lukes/ISO-3166-Countries-with-Regional-Codes by
+### ISO-3166-data.json
+
+The file iso-3166-data.json is from https://github.com/lukes/ISO-3166-Countries-with-Regional-Codes by
 Luke Duncalfe and licensed under the [Creative Commons Attribution-ShareAlike 4.0 International License](https://creativecommons.org/licenses/by-sa/4.0/).
 
-Navigate to http://localhost:3000
+In case of updating the file, make sure to run `extract-regions.js` to extract the unique sub-regions. Then make sure to update the `regionColorMap` in `public/main.js` with the new colors.
