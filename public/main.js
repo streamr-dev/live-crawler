@@ -803,20 +803,34 @@ if (!streamId) {
         document.getElementById('region-stats').innerHTML = subRegionStatsHtml;
 
         // Update version statistics
-        const versionStatsHtml = nodeStats.versions
-            .map(([version, count]) => `<p>${version}: ${count} (${((count/totalNodes)*100).toFixed(1)}%)</p>`)
-            .join('\n');
+        const versionStatsHtml = `
+            <table class="stats-table">
+                <tr>
+                    <th>Version</th>
+                    <th>Count</th>
+                    <th>%</th>
+                </tr>
+                ${nodeStats.versions
+                    .map(([version, count]) => `
+                        <tr>
+                            <td>${version}</td>
+                            <td>${count}</td>
+                            <td>${((count/totalNodes)*100).toFixed(1)}%</td>
+                        </tr>`
+                    ).join('\n')}
+            </table>
+        `;
         document.getElementById('version-stats').innerHTML = versionStatsHtml;
 
         // After computing other statistics
         const latencyStats = computeLatencyStats(nodes);
         const latencyStatsHtml = `
-        <div style="margin-top: 10px;">
-                <table class="latency-table">
+            <div style="margin-top: 10px;">
+                <table class="stats-table">
                     <tr>
                         <th>Range</th>
                         <th>Count</th>
-                        <th>Percentage</th>
+                        <th>%</th>
                     </tr>
                     ${latencyStats.buckets.map(bucket =>
                         `<tr>
