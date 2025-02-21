@@ -491,6 +491,67 @@ function computeMeanRandomAssortativity(nodes, originalLinks, iterations = 10) {
     return (totalAssortativity / iterations).toFixed(2);
 }
 
+function computeLatencyStats(nodes) {
+    // Use a Map to deduplicate measurements
+    const latencyMap = new Map();
+    nodes.forEach(node => {
+        node.neighbors.forEach(neighbor => {
+            if (neighbor.rtt) {
+                const key = [node.id, neighbor.id].sort().join('-');
+                latencyMap.set(key, neighbor.rtt / 2);
+            }
+        });
+    });
+
+    // Convert the deduplicated measurements to array
+    const latencies = Array.from(latencyMap.values());
+
+    if (latencies.length === 0) {
+        return {
+            min: 'N/A',
+            max: 'N/A',
+            avg: 'N/A',
+            median: 'N/A',
+            p95: 'N/A',
+            total: 0,
+            buckets: []
+        };
+    }
+
+    latencies.sort((a, b) => a - b);
+    const min = latencies[0];
+    const max = latencies[latencies.length - 1];
+    const avg = latencies.reduce((a, b) => a + b, 0) / latencies.length;
+    const median = latencies[Math.floor(latencies.length / 2)];
+    const p95 = latencies[Math.floor(latencies.length * 0.95)];
+
+    const bucketDefinitions = [
+        { min: 0, max: 1, label: "<= 1 ms" },
+        { min: 1, max: 10, label: "1-10 ms" },
+        { min: 10, max: 50, label: "10-50 ms" },
+        { min: 50, max: 100, label: "50-100 ms" },
+        { min: 100, max: 200, label: "100-200 ms" },
+        { min: 200, max: 500, label: "200-500 ms" },
+        { min: 500, max: Infinity, label: "> 500 ms" }
+    ];
+
+    // Count latencies in each bucket
+    const buckets = bucketDefinitions.map(bucket => ({
+        label: bucket.label,
+        count: latencies.filter(latency => latency > bucket.min && latency <= bucket.max).length
+    }));
+
+    return {
+        min: min.toFixed(0),
+        max: max.toFixed(0),
+        avg: avg.toFixed(0),
+        median: median.toFixed(0),
+        p95: p95.toFixed(0),
+        total: latencies.length,
+        buckets
+    };
+}
+
 if (!streamId) {
     // Show instructions if no streamId is provided
     document.getElementById('loading').style.display = 'none';
@@ -746,5 +807,38 @@ if (!streamId) {
             .map(([version, count]) => `<p>${version}: ${count} (${((count/totalNodes)*100).toFixed(1)}%)</p>`)
             .join('\n');
         document.getElementById('version-stats').innerHTML = versionStatsHtml;
+
+        // After computing other statistics
+        const latencyStats = computeLatencyStats(nodes);
+        const latencyStatsHtml = `
+        <div style="margin-top: 10px;">
+                <table class="latency-table">
+                    <tr>
+                        <th>Range</th>
+                        <th>Count</th>
+                        <th>Percentage</th>
+                    </tr>
+                    ${latencyStats.buckets.map(bucket =>
+                        `<tr>
+                            <td>${bucket.label}</td>
+                            <td>${bucket.count}</td>
+                            <td>${((bucket.count/latencyStats.total)*100).toFixed(1)}%</td>
+                        </tr>`
+                    ).join('\n')}
+                    <tr>
+                        <td><strong>Total:</strong></td>
+                        <td><strong>${latencyStats.total}</strong></td>
+                        <td><strong>100%</strong></td>
+                    </tr>
+                </table>
+                <p style="margin-top: 10px;"><strong>Key statistics:</strong></p>
+                <p>Average: ${latencyStats.avg} ms</p>
+                <p>Median: ${latencyStats.median} ms</p>
+                <p>95th percentile: ${latencyStats.p95} ms</p>
+                <p>Min: ${latencyStats.min}</p>
+                <p>Max: ${latencyStats.max}</p>
+            </div>
+        `;
+        document.getElementById('latency-stats').innerHTML = latencyStatsHtml;
     });
 }
