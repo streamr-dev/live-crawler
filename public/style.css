@@ -112,7 +112,6 @@ text {
     font-family: sans-serif;
     display: none;
     font-size: clamp(12px, 1.5vw, 14px);
-    cursor: move;
     user-select: none;
 }
 
