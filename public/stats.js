@@ -400,7 +400,7 @@ export function computeAverageLatencyPath(nodes) {
     });
 
     return {
-        averageLatencyPath: totalPaths > 0 ? (totalLatency / totalPaths).toFixed(2) : 'N/A',
-        maxLatencyPath: maxLatencyPath > 0 ? maxLatencyPath.toFixed(2) : 'N/A'
+        averageLatencyPath: totalPaths > 0 ? (totalLatency / totalPaths).toFixed(0) : 'N/A',
+        maxLatencyPath: maxLatencyPath > 0 ? maxLatencyPath.toFixed(0) : 'N/A'
     };
 }
