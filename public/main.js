@@ -42,8 +42,9 @@ const regionColorMap = {
 const urlParams = new URLSearchParams(window.location.search);
 const streamId = urlParams.get('streamId');
 
-let currentNodeId = null;
 let links = [];
+let nodes = [];
+let currentNodeId = null;
 let colorScale = d3.scaleOrdinal()
     .domain(Object.keys(regionColorMap))
     .range(Object.values(regionColorMap));
@@ -75,7 +76,7 @@ function showNodeDetails(node, nodeById) {
         .attr("stroke-dasharray", "4,4");
 
     d3.selectAll(".nodes circle")
-        .filter(d => d.id !== node.id && !node.neighbors.includes(d.id))
+        .filter(d => d.id !== node.id && !node.neighbors.some(n => n.id === d.id))
         .attr("fill", COLORS.NODE_INACTIVE);
 
     // Highlight links connected to the selected node
@@ -91,9 +92,10 @@ function showNodeDetails(node, nodeById) {
             <p><strong>Application version:</strong> ${node.applicationVersion}</p>
             <p><strong>Websocket URL:</strong> ${node.websocketUrl || 'N/A'}</p>
             <p><strong>Node type:</strong> ${node.nodeType}</p>
-            <p><strong>Neighbors (${node.neighbors.length}):</strong><br> ${node.neighbors.map(neighborId => {
-                const neighbor = nodeById.get(neighborId);
-                return `<a href="#${neighborId}" style="text-decoration: none; color: blue;">${getNodeLabel(neighbor)}</a>`;
+            <p><strong>Neighbors (${node.neighbors.length}):</strong><br> ${node.neighbors.map(neighbor => {
+                const neighborNode = nodeById.get(neighbor.id);
+                const rttDisplay = neighbor.rtt ? `(${(neighbor.rtt / 2).toFixed(0)} ms)` : '';
+                return `<a href="#${neighbor.id}" style="text-decoration: none; color: blue;">${getNodeLabel(neighborNode)}</a> ${rttDisplay}`;
             }).join(',<br>')}</p>
             <p><strong>Control layer neighbor count:</strong> ${node.controlLayerNeighborCount}</p>
             <p><strong>All stream partitions (${node.allStreamPartitions.length}):</strong> ${node.allStreamPartitions.join(',<br>')}</p>
@@ -138,30 +140,27 @@ function visualizePropagation() {
                             .attr("fill", originalColor);
                     });
 
-                // Highlight links and gather next level nodes
-                links.forEach(linkData => {
-                    if (linkData.source.id === nodeId && !visited.has(linkData.target.id)) {
-                        d3.selectAll("line")
-                            .filter(l => l.source.id === linkData.source.id && l.target.id === linkData.target.id)
-                            .style("stroke", COLORS.LINK_PROPAGATION_HIGHLIGHT)
-                            .style("stroke-width", 2)
-                            .transition()
-                            .duration(2000)
-                            .style("stroke", COLORS.LINK_DEFAULT)
-                            .style("stroke-width", 1);
-                        nextQueue.push(linkData.target.id);
-                    } else if (linkData.target.id === nodeId && !visited.has(linkData.source.id)) {
-                        d3.selectAll("line")
-                            .filter(l => l.source.id === linkData.source.id && l.target.id === linkData.target.id)
-                            .style("stroke", COLORS.LINK_PROPAGATION_HIGHLIGHT)
-                            .style("stroke-width", 2)
-                            .transition()
-                            .duration(2000)
-                            .style("stroke", COLORS.LINK_DEFAULT)
-                            .style("stroke-width", 1);
-                        nextQueue.push(linkData.source.id);
-                    }
-                });
+                // Find the node's neighbors
+                const node = nodes.find(n => n.id === nodeId);
+                if (node) {
+                    node.neighbors.forEach(neighbor => {
+                        if (!visited.has(neighbor.id)) {
+                            // Highlight the link
+                            d3.selectAll("line")
+                                .filter(l =>
+                                    (l.source.id === nodeId && l.target.id === neighbor.id) ||
+                                    (l.source.id === neighbor.id && l.target.id === nodeId)
+                                )
+                                .style("stroke", COLORS.LINK_PROPAGATION_HIGHLIGHT)
+                                .style("stroke-width", 2)
+                                .transition()
+                                .duration(2000)
+                                .style("stroke", COLORS.LINK_DEFAULT)
+                                .style("stroke-width", 1);
+                            nextQueue.push(neighbor.id);
+                        }
+                    });
+                }
             }
         });
 
@@ -184,8 +183,10 @@ function computeNetworkStats(nodes, links) {
     });
 
     links.forEach(link => {
-        adjacencyList.get(link.source).push(link.target);
-        adjacencyList.get(link.target).push(link.source);
+        const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+        const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+        adjacencyList.get(sourceId).push(targetId);
+        adjacencyList.get(targetId).push(sourceId);
     });
 
     let diameter = 0;
@@ -522,8 +523,8 @@ if (!streamId) {
         // Show the legend
         document.getElementById('legend').style.display = 'block';
 
-        // Build nodes and links
-        const nodes = [];
+        // Update the global nodes array instead of creating a new one
+        nodes = [];
         const nodeById = new Map();
         data.forEach(function (d) {
             const node = {
@@ -547,7 +548,8 @@ if (!streamId) {
         const linkSet = new Set();
         data.forEach(function (d) {
             const sourceId = d.id;
-            d.neighbors.forEach(function (targetId) {
+            d.neighbors.forEach(function (neighbor) {
+                const targetId = neighbor.id;
                 const key = [sourceId, targetId].sort().join("-");
                 if (!linkSet.has(key)) {
                     linkSet.add(key);
