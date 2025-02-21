@@ -114,7 +114,7 @@ function showNodeDetails(node, nodeById) {
     detailsDiv.style.display = 'block';
 }
 
-function closeNodeDetails() {
+window.closeNodeDetails = function () {
     resetHighlighting();
 
     // Remove hash from URL when closing details
@@ -122,7 +122,7 @@ function closeNodeDetails() {
     document.getElementById('node-details').style.display = 'none';
 }
 
-function visualizePropagation() {
+window.visualizePropagation = function () {
     if (!currentNodeId) {
         return;
     }
