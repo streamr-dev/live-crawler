@@ -30,6 +30,11 @@ text {
     padding: 15px;
     font-family: sans-serif;
     font-size: clamp(12px, 1.5vw, 14px);
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    max-height: 80vh;
+    overflow-y: auto;
 }
 
 .legend h3 {
