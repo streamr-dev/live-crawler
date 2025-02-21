@@ -20,6 +20,11 @@ const streamrClient = new StreamrClient({
     metrics: false
 })
 
+streamrClient.connect().catch((err) => {
+    logger.fatal('Failed to start Streamr client', { err })
+    process.exit(1)
+})
+
 app.get('/topology', async (req, res) => {
     const streamIdParam = req.query.streamId as string
     if (!streamIdParam) {
