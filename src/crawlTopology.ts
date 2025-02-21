@@ -3,6 +3,7 @@ import { DhtAddress } from '@streamr/sdk'
 import { Logger, binaryToHex } from '@streamr/utils'
 import { NetworkNodeFacade, NormalizedNodeInfo } from './NetworkNodeFacade'
 import { Topology } from './Topology'
+import { RttMatrix } from "./RttMatrix"
 
 const logger = new Logger(module)
 
@@ -25,7 +26,7 @@ export const crawlTopology = async (
     entryPoints: PeerDescriptor[],
     getNeighbors: (nodeInfo: NormalizedNodeInfo) => PeerDescriptor[],
     runId: string
-): Promise<Topology> => {
+): Promise<{ topology: Topology, rttMatrix: RttMatrix }> => {
     const startTime = Date.now()
     const nodeInfos: Map<DhtAddress, NormalizedNodeInfo> = new Map()
     const errorNodes: Set<DhtAddress> = new Set()
@@ -74,5 +75,6 @@ export const crawlTopology = async (
 
     logger.info(`Topology crawled`, { runId, timeTaken: Date.now() - startTime, nodeCount: nodeInfos.size, errorCount: errorNodes.size })
     const topology = await Topology.create([...nodeInfos.values()])
-    return topology
+    const rttMatrix = new RttMatrix([...nodeInfos.values()])
+    return { topology, rttMatrix }
 }
