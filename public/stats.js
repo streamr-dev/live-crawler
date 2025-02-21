@@ -329,3 +329,78 @@ export function computeLatencyStats(nodes) {
         buckets
     };
 }
+
+export function computeAverageLatencyPath(nodes) {
+    const adjacencyList = new Map();
+    nodes.forEach(node => {
+        adjacencyList.set(node.id, new Map());
+    });
+
+    // Populate adjacency list with weights (RTT/2)
+    // Note: if there is not rtt, the link is not added
+    nodes.forEach(node => {
+        node.neighbors.forEach(neighbor => {
+            if (neighbor.rtt) {
+                adjacencyList.get(node.id).set(neighbor.id, neighbor.rtt / 2);
+                adjacencyList.get(neighbor.id).set(node.id, neighbor.rtt / 2);
+            }
+        });
+    });
+
+    function dijkstra(startId) {
+        const distances = new Map();
+        const visited = new Set();
+        const pq = []; // Priority queue
+
+        // Initialize distances
+        nodes.forEach(node => {
+            distances.set(node.id, Infinity);
+        });
+        distances.set(startId, 0);
+        pq.push([0, startId]);
+
+        while (pq.length > 0) {
+            pq.sort((a, b) => a[0] - b[0]); // Sort by distance
+            const [currentDist, currentId] = pq.shift();
+
+            if (visited.has(currentId)) continue;
+            visited.add(currentId);
+
+            const neighbors = adjacencyList.get(currentId);
+            neighbors.forEach((weight, neighborId) => {
+                if (!visited.has(neighborId)) {
+                    const newDist = currentDist + weight;
+                    if (newDist < distances.get(neighborId)) {
+                        distances.set(neighborId, newDist);
+                        pq.push([newDist, neighborId]);
+                    }
+                }
+            });
+        }
+
+        return distances;
+    }
+
+    let totalLatency = 0;
+    let totalPaths = 0;
+    let maxLatencyPath = 0;
+
+    // Compute shortest paths between all pairs
+    nodes.forEach(node => {
+        const distances = dijkstra(node.id);
+        distances.forEach((distance, targetId) => {
+            if (targetId !== node.id && distance !== Infinity) {
+                totalLatency += distance;
+                totalPaths++;
+                if (distance > maxLatencyPath) {
+                    maxLatencyPath = distance;
+                }
+            }
+        });
+    });
+
+    return {
+        averageLatencyPath: totalPaths > 0 ? (totalLatency / totalPaths).toFixed(2) : 'N/A',
+        maxLatencyPath: maxLatencyPath > 0 ? maxLatencyPath.toFixed(2) : 'N/A'
+    };
+}

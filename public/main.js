@@ -4,7 +4,8 @@ import {
     computeLatencyStats,
     computeAssortativityByRegion,
     buildAssortativityByRegionMaximizedLinks,
-    computeMeanRandomAssortativity
+    computeMeanRandomAssortativity,
+    computeAverageLatencyPath
 } from './stats.js';
 
 const COLORS = {
@@ -311,6 +312,9 @@ if (!streamId) {
         const networkDiameter = stats.diameter;
         const averagePathLength = stats.averagePathLength;
 
+        // Calculate latency path statistics
+        const latencyPathStats = computeAverageLatencyPath(nodes);
+
         // Calculate assortativity by sub-region
         const assortativityByRegion = computeAssortativityByRegion(nodes, links);
 
@@ -453,6 +457,8 @@ if (!streamId) {
         document.getElementById('mean-degree').textContent = averageNeighborCount;
         document.getElementById('network-diameter').textContent = networkDiameter;
         document.getElementById('average-path-length').textContent = averagePathLength;
+        document.getElementById('average-latency-path').textContent = latencyPathStats.averageLatencyPath;
+        document.getElementById('max-latency-path').textContent = latencyPathStats.maxLatencyPath;
         document.getElementById('assortativity-by-region').textContent = assortativityByRegion;
         document.getElementById('max-assortativity').textContent = maxAssortativity;
         document.getElementById('random-assortativity').textContent = randomAssortativity;
