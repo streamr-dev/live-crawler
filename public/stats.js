@@ -404,3 +404,57 @@ export function computeAverageLatencyPath(nodes) {
         maxLatencyPath: maxLatencyPath > 0 ? maxLatencyPath.toFixed(0) : 'N/A'
     };
 }
+
+export class PropagationSimulator {
+    constructor(startNodeId, nodes) {
+        this.nodes = nodes;
+        this.visited = new Set();
+        this.queue = new Map();
+        this.queue.set(startNodeId, 0);
+        this.currentTime = 0;
+        this.timeStep = 5;
+    }
+
+    step() {
+        const newNodes = [];
+
+        // Convert queue to array for iteration since we'll be modifying it
+        Array.from(this.queue.entries()).forEach(([nodeId, timeToReach]) => {
+            if (timeToReach <= this.currentTime && !this.visited.has(nodeId)) {
+                this.visited.add(nodeId);
+                newNodes.push(nodeId);
+                this.queue.delete(nodeId);
+
+                // Find the node's neighbors and their latencies
+                const node = this.nodes.find(n => n.id === nodeId);
+                if (node) {
+                    node.neighbors.forEach(neighbor => {
+                        if (!this.visited.has(neighbor.id)) {
+                            const latency = neighbor.rtt ? neighbor.rtt / 2 : 50;
+                            const timeToReachNeighbor = timeToReach + latency;
+
+                            // Only update if not in queue or new time is lower
+                            const existingTime = this.queue.get(neighbor.id);
+                            if (!existingTime || timeToReachNeighbor < existingTime) {
+                                this.queue.set(neighbor.id, timeToReachNeighbor);
+                            }
+                        }
+                    });
+                }
+            }
+        });
+
+        this.currentTime += this.timeStep;
+        return {
+            newNodes,
+            currentTime: this.currentTime,
+            visitedCount: this.visited.size,
+            totalNodes: this.nodes.length,
+            isComplete: this.visited.size === this.nodes.length
+        };
+    }
+
+    getVisitedNodes() {
+        return Array.from(this.visited);
+    }
+}

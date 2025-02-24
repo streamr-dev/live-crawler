@@ -5,7 +5,8 @@ import {
     computeAssortativityByRegion,
     buildAssortativityByRegionMaximizedLinks,
     computeMeanRandomAssortativity,
-    computeAverageLatencyPath
+    computeAverageLatencyPath,
+    PropagationSimulator
 } from './stats.js';
 
 const COLORS = {
@@ -127,62 +128,113 @@ window.visualizePropagation = function () {
     if (!currentNodeId) {
         return;
     }
-    const visited = new Set();
-    const queue = [currentNodeId];
 
-    function highlightNextLevel() {
-        if (queue.length === 0) return;
+    // Create container for timer and controls
+    const container = d3.select("body")
+        .append("div")
+        .attr("class", "propagation-timer")
+        .style("position", "fixed")
+        .style("top", "20px")
+        .style("left", "20px")
+        .style("background", "white")
+        .style("padding", "10px")
+        .style("border-radius", "5px")
+        .style("border", "1px solid #ccc")
+        .style("font-family", "sans-serif");
 
-        const nextQueue = [];
-        queue.forEach(nodeId => {
-            if (!visited.has(nodeId)) {
-                visited.add(nodeId);
+    // Add timer display div
+    const timerDisplay = container
+        .append("div")
+        .attr("class", "timer-text");
 
-                // Highlight the node
-                d3.selectAll("circle")
-                    .filter(n => n.id === nodeId)
-                    .each(function() {
-                        const originalColor = d3.select(this).attr("fill");
-                        d3.select(this)
-                            .attr("fill", COLORS.NODE_PROPAGATION_HIGHLIGHT)
-                            .transition()
-                            .duration(2000)
-                            .attr("fill", originalColor);
-                    });
+    // Add pause/continue button
+    const pauseButton = container
+        .append("button")
+        .style("margin-top", "8px")
+        .style("padding", "4px 8px")
+        .text("Pause");
 
-                // Find the node's neighbors
-                const node = nodes.find(n => n.id === nodeId);
-                if (node) {
-                    node.neighbors.forEach(neighbor => {
-                        if (!visited.has(neighbor.id)) {
-                            // Highlight the link
-                            d3.selectAll("line")
-                                .filter(l =>
-                                    (l.source.id === nodeId && l.target.id === neighbor.id) ||
-                                    (l.source.id === neighbor.id && l.target.id === nodeId)
-                                )
-                                .style("stroke", COLORS.LINK_PROPAGATION_HIGHLIGHT)
-                                .style("stroke-width", 2)
-                                .transition()
-                                .duration(2000)
-                                .style("stroke", COLORS.LINK_DEFAULT)
-                                .style("stroke-width", 1);
-                            nextQueue.push(neighbor.id);
-                        }
-                    });
-                }
-            }
-        });
+    const simulator = new PropagationSimulator(currentNodeId, nodes);
+    let isPaused = false;
+    let animationFrame = null;
+    const animationSpeed = 500;
 
-        // Move to the next level
-        queue.length = 0;
-        queue.push(...nextQueue);
-
-        // Schedule the next level highlighting
-        setTimeout(highlightNextLevel, 2000);
+    function updateTimerDisplay(time, visitedCount, totalNodes) {
+        const percentage = Math.round((visitedCount / totalNodes) * 100);
+        timerDisplay.html(`Time: ${time}ms<br>Nodes reached: ${visitedCount} / ${totalNodes} (${percentage}%)`);
     }
 
-    highlightNextLevel();
+    function highlightNodes(nodeIds) {
+        nodeIds.forEach(nodeId => {
+            // Highlight the node
+            d3.selectAll("circle")
+                .filter(n => n.id === nodeId)
+                .each(function() {
+                    const originalColor = d3.select(this).attr("fill");
+                    d3.select(this)
+                        .attr("fill", COLORS.NODE_PROPAGATION_HIGHLIGHT)
+                        .transition()
+                        .duration(2000)
+                        .attr("fill", originalColor);
+                });
+
+            // Find and highlight links to previously visited nodes
+            const node = nodes.find(n => n.id === nodeId);
+            if (node) {
+                node.neighbors.forEach(neighbor => {
+                    if (simulator.getVisitedNodes().includes(neighbor.id)) {
+                        d3.selectAll("line")
+                            .filter(l =>
+                                (l.source.id === nodeId && l.target.id === neighbor.id) ||
+                                (l.source.id === neighbor.id && l.target.id === nodeId)
+                            )
+                            .style("stroke", COLORS.LINK_PROPAGATION_HIGHLIGHT)
+                            .style("stroke-width", 2)
+                            .transition()
+                            .duration(2000)
+                            .style("stroke", COLORS.LINK_DEFAULT)
+                            .style("stroke-width", 1);
+                    }
+                });
+            }
+        });
+    }
+
+    function step() {
+        if (isPaused) {
+            return;
+        }
+
+        const result = simulator.step();
+
+        if (result.newNodes.length > 0) {
+            highlightNodes(result.newNodes);
+        }
+
+        updateTimerDisplay(result.currentTime, result.visitedCount, result.totalNodes);
+
+        if (!result.isComplete) {
+            animationFrame = setTimeout(step, animationSpeed);
+        } else {
+            setTimeout(() => {
+                container.remove();
+            }, 2000);
+        }
+    }
+
+    // Initial display
+    updateTimerDisplay(0, 0, nodes.length);
+
+    // Add pause/continue functionality
+    pauseButton.on("click", () => {
+        isPaused = !isPaused;
+        pauseButton.text(isPaused ? "Continue" : "Pause");
+        if (!isPaused) {
+            step();
+        }
+    });
+
+    step();
 }
 
 function getNodeLabel(d) {
