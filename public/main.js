@@ -14,6 +14,7 @@ const COLORS = {
     NODE_INACTIVE: '#999',
     LINK_DEFAULT: '#999',
     NODE_PROPAGATION_HIGHLIGHT: 'red',
+    NODE_PROPAGATION_VISITED: '#444',
     LINK_PROPAGATION_HIGHLIGHT: 'red'
 };
 
@@ -122,6 +123,12 @@ window.closeNodeDetails = function () {
     // Remove hash from URL when closing details
     window.history.replaceState(null, '', window.location.pathname + window.location.search);
     document.getElementById('node-details').style.display = 'none';
+
+    // Close propagation timer if it exists
+    const propagationTimer = document.querySelector('.propagation-timer');
+    if (propagationTimer) {
+        propagationTimer.remove();
+    }
 }
 
 window.visualizePropagation = function () {
@@ -129,7 +136,7 @@ window.visualizePropagation = function () {
         return;
     }
 
-    // Create container for timer and controls
+    // Create container for controls
     const container = d3.select("body")
         .append("div")
         .attr("class", "propagation-timer")
@@ -147,94 +154,91 @@ window.visualizePropagation = function () {
         .append("div")
         .attr("class", "timer-text");
 
-    // Add pause/continue button
-    const pauseButton = container
+    // Add next step button
+    const nextButton = container
         .append("button")
         .style("margin-top", "8px")
         .style("padding", "4px 8px")
-        .text("Pause");
+        .text("Next Step");
 
     const simulator = new PropagationSimulator(currentNodeId, nodes);
-    let isPaused = false;
-    let animationFrame = null;
-    const animationSpeed = 500;
 
     function updateTimerDisplay(time, visitedCount, totalNodes) {
         const percentage = Math.round((visitedCount / totalNodes) * 100);
         timerDisplay.html(`Time: ${time}ms<br>Nodes reached: ${visitedCount} / ${totalNodes} (${percentage}%)`);
     }
 
-    function highlightNodes(nodeIds) {
-        nodeIds.forEach(nodeId => {
-            // Highlight the node
-            d3.selectAll("circle")
-                .filter(n => n.id === nodeId)
-                .each(function() {
-                    const originalColor = d3.select(this).attr("fill");
-                    d3.select(this)
-                        .attr("fill", COLORS.NODE_PROPAGATION_HIGHLIGHT)
-                        .transition()
-                        .duration(2000)
-                        .attr("fill", originalColor);
-                });
-
-            // Find and highlight links to previously visited nodes
-            const node = nodes.find(n => n.id === nodeId);
-            if (node) {
-                node.neighbors.forEach(neighbor => {
-                    if (simulator.getVisitedNodes().includes(neighbor.id)) {
-                        d3.selectAll("line")
-                            .filter(l =>
-                                (l.source.id === nodeId && l.target.id === neighbor.id) ||
-                                (l.source.id === neighbor.id && l.target.id === nodeId)
-                            )
-                            .style("stroke", COLORS.LINK_PROPAGATION_HIGHLIGHT)
-                            .style("stroke-width", 2)
-                            .transition()
-                            .duration(2000)
-                            .style("stroke", COLORS.LINK_DEFAULT)
-                            .style("stroke-width", 1);
-                    }
-                });
+    function highlightNodes(newLinks, visitedNodes) {
+        const nodeIds = newLinks.map(({ target }) => target);
+        visitedNodes.forEach(nodeId => {
+            if (!nodeIds.includes(nodeId)) { // Don't color nodes from current step
+                d3.selectAll("circle:not(.highlight-ring)")
+                    .filter(n => n.id === nodeId)
+                    .attr("fill", COLORS.NODE_PROPAGATION_VISITED);
             }
+        });
+
+        // Then highlight current step's nodes in red
+        nodeIds.forEach(nodeId => {
+            // Highlight the node with red color
+            d3.selectAll("circle:not(.highlight-ring)")
+                .filter(n => n.id === nodeId)
+                .attr("fill", COLORS.NODE_PROPAGATION_HIGHLIGHT);
+        });
+
+        // Highlight all previously used links in dark gray
+        const allPropagationLinks = simulator.getPropagationLinks();
+        allPropagationLinks.forEach(link => {
+            const isNewLink = newLinks.some(nl =>
+                (nl.source === link.source && nl.target === link.target) ||
+                (nl.source === link.target && nl.target === link.source)
+            );
+
+            if (!isNewLink) {
+                d3.selectAll("line")
+                    .filter(l =>
+                        (l.source.id === link.source && l.target.id === link.target) ||
+                        (l.source.id === link.target && l.target.id === link.source)
+                    )
+                    .attr("stroke", COLORS.NODE_PROPAGATION_VISITED)
+                    .attr("stroke-width", 1.5);
+            }
+        });
+
+        // Highlight new links in red
+        newLinks.forEach(link => {
+            d3.selectAll("line")
+                .filter(l =>
+                    (l.source.id === link.source && l.target.id === link.target) ||
+                    (l.source.id === link.target && l.target.id === link.source)
+                )
+                .attr("stroke", COLORS.LINK_PROPAGATION_HIGHLIGHT)
+                .attr("stroke-width", 2);
         });
     }
 
     function step() {
-        if (isPaused) {
-            return;
-        }
-
         const result = simulator.step();
 
-        if (result.newNodes.length > 0) {
-            highlightNodes(result.newNodes);
+        if (result.newLinks.length > 0) {
+            highlightNodes(result.newLinks, simulator.getVisitedNodes());
         }
 
         updateTimerDisplay(result.currentTime, result.visitedCount, result.totalNodes);
 
-        if (!result.isComplete) {
-            animationFrame = setTimeout(step, animationSpeed);
-        } else {
-            setTimeout(() => {
-                container.remove();
-            }, 2000);
+        if (result.isComplete) {
+            nextButton.attr("disabled", true)
+                .style("opacity", 0.5)
+                .style("cursor", "not-allowed")
+                .text("Complete");
         }
     }
 
     // Initial display
     updateTimerDisplay(0, 0, nodes.length);
 
-    // Add pause/continue functionality
-    pauseButton.on("click", () => {
-        isPaused = !isPaused;
-        pauseButton.text(isPaused ? "Continue" : "Pause");
-        if (!isPaused) {
-            step();
-        }
-    });
-
-    step();
+    // Add next step functionality
+    nextButton.on("click", step);
 }
 
 function getNodeLabel(d) {
@@ -273,8 +277,8 @@ function resetHighlighting() {
     d3.selectAll("circle")
         .attr("fill", d => d.location?.subRegion ? colorScale(d.location.subRegion) : regionColorMap['Unknown']);
 
-    // Reset link styles
-    d3.selectAll(".links line")
+    // Reset link styles - remove the .links class selector to match propagation visualization
+    d3.selectAll("line")
         .attr("stroke", COLORS.LINK_DEFAULT)
         .attr("stroke-width", 1);
 
@@ -423,7 +427,8 @@ if (!streamId) {
             .selectAll("line")
             .data(links)
             .enter().append("line")
-            .attr("stroke-width", 1);
+            .attr("stroke-width", 1)
+            .attr("stroke", COLORS.LINK_DEFAULT);
 
         // Draw nodes
         const node = container.append("g")

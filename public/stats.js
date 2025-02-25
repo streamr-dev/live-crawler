@@ -411,32 +411,39 @@ export class PropagationSimulator {
         this.visited = new Set();
         this.queue = new Map();
         this.queue.set(startNodeId, 0);
+        this.usedLinks = new Map();     // Track which links were used for propagation
+        this.activeLinks = new Map();   // Track which links are currently active
         this.currentTime = 0;
         this.timeStep = 5;
     }
 
     step() {
-        const newNodes = [];
+        const newLinks = []; // Track links used in this step
 
         // Convert queue to array for iteration since we'll be modifying it
         Array.from(this.queue.entries()).forEach(([nodeId, timeToReach]) => {
             if (timeToReach <= this.currentTime && !this.visited.has(nodeId)) {
                 this.visited.add(nodeId);
-                newNodes.push(nodeId);
                 this.queue.delete(nodeId);
+                const source = this.activeLinks.get(nodeId);
+                newLinks.push({
+                    source,
+                    target: nodeId
+                });
+                this.usedLinks.set(nodeId, source);
+                this.activeLinks.delete(nodeId);
 
-                // Find the node's neighbors and their latencies
                 const node = this.nodes.find(n => n.id === nodeId);
                 if (node) {
                     node.neighbors.forEach(neighbor => {
                         if (!this.visited.has(neighbor.id)) {
-                            const latency = neighbor.rtt ? neighbor.rtt / 2 : 50;
+                            const latency = neighbor.rtt ? neighbor.rtt / 2 : 50; // TODO: default value
                             const timeToReachNeighbor = timeToReach + latency;
 
-                            // Only update if not in queue or new time is lower
                             const existingTime = this.queue.get(neighbor.id);
                             if (!existingTime || timeToReachNeighbor < existingTime) {
                                 this.queue.set(neighbor.id, timeToReachNeighbor);
+                                this.activeLinks.set(neighbor.id, nodeId);
                             }
                         }
                     });
@@ -446,7 +453,7 @@ export class PropagationSimulator {
 
         this.currentTime += this.timeStep;
         return {
-            newNodes,
+            newLinks,
             currentTime: this.currentTime,
             visitedCount: this.visited.size,
             totalNodes: this.nodes.length,
@@ -456,5 +463,17 @@ export class PropagationSimulator {
 
     getVisitedNodes() {
         return Array.from(this.visited);
+    }
+
+    // New method to get the propagation path
+    getPropagationLinks() {
+        const links = [];
+        this.usedLinks.forEach((source, target) => {
+            links.push({
+                source,
+                target
+            });
+        });
+        return links;
     }
 }
