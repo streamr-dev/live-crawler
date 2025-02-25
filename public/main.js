@@ -154,12 +154,27 @@ window.visualizePropagation = function () {
         .append("div")
         .attr("class", "timer-text");
 
+    // Create button container for layout
+    const buttonContainer = container
+        .append("div")
+        .attr("class", "button-container")
+        .style("display", "flex")
+        .style("gap", "8px")
+        .style("margin-top", "8px");
+
     // Add next step button
-    const nextButton = container
+    const nextButton = buttonContainer
         .append("button")
-        .style("margin-top", "8px")
         .style("padding", "4px 8px")
         .text("Next Step");
+
+    // Add auto run button
+    const autoRunButton = buttonContainer
+        .append("button")
+        .style("padding", "4px 8px")
+        .text("Auto Run");
+
+    let autoRunInterval = null;
 
     const simulator = new PropagationSimulator(currentNodeId, nodes);
 
@@ -213,7 +228,7 @@ window.visualizePropagation = function () {
                     (l.source.id === link.target && l.target.id === link.source)
                 )
                 .attr("stroke", COLORS.LINK_PROPAGATION_HIGHLIGHT)
-                .attr("stroke-width", 2);
+                .attr("stroke-width", 3);
         });
     }
 
@@ -231,7 +246,20 @@ window.visualizePropagation = function () {
                 .style("opacity", 0.5)
                 .style("cursor", "not-allowed")
                 .text("Complete");
+
+            autoRunButton.attr("disabled", true)
+                .style("opacity", 0.5)
+                .style("cursor", "not-allowed")
+                .text("Complete");
+
+            // Clear interval if auto-running
+            if (autoRunInterval) {
+                clearInterval(autoRunInterval);
+                autoRunInterval = null;
+            }
         }
+
+        return result.isComplete;
     }
 
     // Initial display
@@ -239,6 +267,31 @@ window.visualizePropagation = function () {
 
     // Add next step functionality
     nextButton.on("click", step);
+
+    // Add auto run functionality
+    autoRunButton.on("click", function() {
+        // Disable the button while running to prevent multiple intervals
+        autoRunButton.attr("disabled", true)
+            .style("opacity", 0.5)
+            .style("cursor", "not-allowed")
+            .text("Running...");
+
+        // Clear any existing interval
+        if (autoRunInterval) {
+            clearInterval(autoRunInterval);
+        }
+
+        // Set up the interval to run steps automatically
+        autoRunInterval = setInterval(() => {
+            const isComplete = step();
+
+            // If simulation is complete, clear the interval
+            if (isComplete) {
+                clearInterval(autoRunInterval);
+                autoRunInterval = null;
+            }
+        }, 750); // 750ms pause between steps
+    });
 }
 
 function getNodeLabel(d) {
