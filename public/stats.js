@@ -114,7 +114,7 @@ export function buildAssortativityByRegionMaximizedLinks(nodes, originalLinks) {
     nodes.forEach(node => {
         nodeDegrees.set(node.id, 0);
         adjacencyList.set(node.id, new Set());
-        const region = node.location.subRegion || 'Unknown';
+        const region = node?.location?.subRegion || 'Unknown';
         if (!regionGroups.has(region)) {
             regionGroups.set(region, []);
         }
