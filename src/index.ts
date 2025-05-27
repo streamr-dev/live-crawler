@@ -1,87 +1,57 @@
-import express from 'express'
-import cors from 'cors'
-import path from 'path'
-import { NetworkNode } from "@streamr/trackerless-network"
-import { crawlTopology } from "./crawlTopology"
-import { StreamrClient } from "@streamr/sdk"
-import { NetworkNodeFacade, NormalizedNodeInfo } from "./NetworkNodeFacade"
-import { Logger, StreamPartID, StreamPartIDUtils, toStreamID, toStreamPartID } from "@streamr/utils"
+import { Logger } from '@streamr/utils'
+import { config } from './config'
+import { StreamrService } from './services/StreamrService'
+import { TopologyService } from './services/TopologyService'
+import { TopologyController } from './controllers/TopologyController'
+import { createApp } from './app'
 
-const PORT = process.env.PORT ?? 3000
-
-const app = express()
 const logger = new Logger(module)
 
-app.use(cors())
-
-app.use(express.static(path.join(__dirname, '../public')))
-
-const streamrClient = new StreamrClient({
-    metrics: false
-})
-
-streamrClient.connect().catch((err) => {
-    logger.fatal('Failed to start Streamr client', { err })
-    process.exit(1)
-})
-
-app.get('/topology', async (req, res) => {
-    const streamIdParam = req.query.streamId as string
-    if (!streamIdParam) {
-        res.status(400).send('Bad Request: streamId query parameter is required')
-        return
-    }
-    let streamId;
+async function startServer(): Promise<void> {
     try {
-        streamId = toStreamID(streamIdParam)
-    } catch (err) {
-        res.status(400).send('Bad Request: Invalid stream ID format')
-        return
-    }
+        // Initialize services
+        const streamrService = new StreamrService(config)
+        await streamrService.initialize()
 
-    let partition;
-    try {
-        partition = req.query.partition !== undefined ? parseInt(req.query.partition as string) : 0
-        if (isNaN(partition)) {
-            throw new Error('Partition must be a number')
+        const topologyService = new TopologyService(config)
+
+        // Initialize controllers
+        const topologyController = new TopologyController(topologyService, streamrService)
+
+        // Create and start Express app
+        const app = createApp(topologyController)
+
+        const server = app.listen(config.port, () => {
+            logger.info(`Server is running on port ${config.port}`)
+        })
+
+        // Graceful shutdown
+        const shutdown = async (signal: string) => {
+            logger.info(`Received ${signal}, shutting down gracefully`)
+
+            server.close(async () => {
+                try {
+                    await streamrService.destroy()
+                    logger.info('Server shut down successfully')
+                    process.exit(0)
+                } catch (err) {
+                    logger.error('Error during shutdown', { err })
+                    process.exit(1)
+                }
+            })
         }
+
+        process.on('SIGTERM', () => shutdown('SIGTERM'))
+        process.on('SIGINT', () => shutdown('SIGINT'))
+
     } catch (err) {
-        res.status(400).send('Bad Request: Invalid partition parameter')
-        return
+        logger.fatal('Failed to start server', { err })
+        process.exit(1)
     }
+}
 
-    let streamPartId;
-    try {
-        streamPartId = toStreamPartID(streamId, partition)
-    } catch (err) {
-        res.status(400).send('Bad Request: Could not create stream partition ID')
-        return
-    }
-
-    try {
-        const localNode = new NetworkNodeFacade((await (streamrClient.getNode()).getNode()) as NetworkNode)
-        const entryPoints = await localNode.fetchStreamPartEntryPoints(streamPartId)
-        const { topology, rttMatrix } = await crawlTopology(localNode, entryPoints, (nodeInfo: NormalizedNodeInfo) => {
-            const spInfo = nodeInfo.streamPartitions.find(({ id }) => id === streamPartId)
-            return spInfo?.contentDeliveryLayerNeighbors.map(({ peerDescriptor }) => peerDescriptor) ?? []
-        }, `${streamPartId}/${Date.now()}`)
-
-        const result = topology.getNodes().map((node) => ({
-            ...node,
-            neighbors: topology.getNeighbors(node.id, streamPartId).map((neighbor) => ({
-                id: neighbor,
-                rtt: rttMatrix.getRtt(node.id, neighbor)
-            }))
-        }))
-
-        res.json(result)
-        logger.info('Sent topology as JSON response')
-    } catch (err) {
-        logger.warn('Encountered error while fetching topology', { err })
-        res.status(500).send('Internal Server Error')
-    }
-})
-
-app.listen(PORT, () => {
-    logger.info(`Server is running on port ${PORT}`)
+// Start the server
+startServer().catch((err) => {
+    logger.fatal('Unhandled error during server startup', { err })
+    process.exit(1)
 })

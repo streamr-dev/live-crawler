@@ -25,14 +25,14 @@ export const crawlTopology = async (
     localNode: NetworkNodeFacade,
     entryPoints: PeerDescriptor[],
     getNeighbors: (nodeInfo: NormalizedNodeInfo) => PeerDescriptor[],
-    runId: string
+    runId: string,
+    maxConcurrent: number = 5
 ): Promise<{ topology: Topology, rttMatrix: RttMatrix }> => {
     const startTime = Date.now()
     const nodeInfos: Map<DhtAddress, NormalizedNodeInfo> = new Map()
     const errorNodes: Set<DhtAddress> = new Set()
     const visitedNodes: Set<DhtAddress> = new Set() // used to avoid duplicate entries in queue
     const queue: PeerDescriptor[] = [...entryPoints]
-    const MAX_CONCURRENT = 5
     const activePromises: Set<Promise<void>> = new Set()
 
     const processNode = async (peerDescriptor: PeerDescriptor) => {
@@ -63,7 +63,7 @@ export const crawlTopology = async (
     }
 
     while (queue.length > 0 || activePromises.size > 0) {
-        while (queue.length > 0 && activePromises.size < MAX_CONCURRENT) {
+        while (queue.length > 0 && activePromises.size < maxConcurrent) {
             const peerDescriptor = queue.shift()!
             const promise = processNode(peerDescriptor).finally(() => activePromises.delete(promise))
             activePromises.add(promise)

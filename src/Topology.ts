@@ -4,19 +4,7 @@ import { Multimap, numberToIpv4, StreamPartIDUtils } from '@streamr/utils'
 import { NormalizedNodeInfo } from './NetworkNodeFacade'
 import { NodeType } from "@streamr/trackerless-network/dist/generated/packages/dht/protos/DhtRpc"
 import { fetchLocationData } from "./fetchLocationData"
-
-export interface Node {
-    id: DhtAddress
-    ipAddress?: string
-    applicationVersion: string
-    websocketUrl?: string
-    nodeType: string
-    region?: number
-    streamPartNeighbors: Multimap<StreamPartID, DhtAddress>
-    controlLayerNeighborCount: number
-    allStreamPartitions: string[]
-    location?: any
-}
+import { Node } from './types'
 
 export class Topology {
     private nodes: Map<DhtAddress, Node> = new Map()
