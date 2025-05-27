@@ -2,18 +2,7 @@ import { GeoIpLocator } from '@streamr/geoip-location'
 import { Logger } from '@streamr/utils'
 import iso3166Data from './iso-3166-data.json'
 import { CityResponse } from "mmdb-lib/lib/reader/response"
-
-interface LocationData {
-    city?: string
-    country?: string
-    countryCode?: string
-    loc?: string
-    hostname?: string
-    org?: string
-    postal?: string
-    timezone?: string
-    subRegion?: string
-}
+import { LocationData } from './types'
 
 const logger = new Logger(module)
 
